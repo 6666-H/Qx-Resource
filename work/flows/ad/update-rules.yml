@@ -21,14 +21,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
           
+      - name: Create Rules Directory
+        run: |
+          mkdir -p rules/ad_list
+          
       - name: Update Rules
         run: |
           python update-rules.py
+        working-directory: rules/ad_list  # 设置工作目录为 rules/ad_list
           
       - name: Commit Changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add .
+          git add rules/ad_list/  # 只添加 rules/ad_list 目录下的更改
           git commit -m "Update rules" || exit 0
           git push
