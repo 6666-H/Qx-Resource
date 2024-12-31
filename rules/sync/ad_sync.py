@@ -53,9 +53,6 @@ def update_local_rules():
     remote_rules, source_stats = get_remote_rules()
     
     try:
-        # 确保目录存在
-        os.makedirs('rules/ad_list', exist_ok=True)
-        
         current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
         date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
         
