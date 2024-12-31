@@ -1,4 +1,14 @@
-! Updated: 2024-12-31 16:50:50 (UTC+8)
+! Updated: 2024-12-31 16:54:14 (UTC+8)
 ! Title: Combined Ad Rules
 ! Total count: 0
+
+! Source Statistics:
+! https://raw.githubusercontent.com/Irrucky/Tool/main/Surge/rules/Reject.list: 0 rules
+! https://ruleset.skk.moe/List/non_ip/reject.conf: 0 rules
+! https://raw.githubusercontent.com/dler-io/Rules/refs/heads/main/Surge/Surge%203/Provider/AdBlock.list: 0 rules
+! https://ruleset.skk.moe/List/ip/reject.conf: 0 rules
+! https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.list: 0 rules
+! https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Reject_Rule/Reject_Rule.rule: 0 rules
+! https://raw.githubusercontent.com/zqzess/rule_for_quantumultX/refs/heads/master/QuantumultX/rules/AdBlock.list: 0 rules
+! https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list: 0 rules
 
