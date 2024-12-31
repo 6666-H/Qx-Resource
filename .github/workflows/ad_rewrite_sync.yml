@@ -23,7 +23,7 @@ jobs:
           
       - name: Update Rules
         run: |
-          python rewrite/ad/sync/ad_sync.py
+          python rewrite/ad/sync/SafeRedirect_sync.py
           
       - name: Commit Changes
         run: |
