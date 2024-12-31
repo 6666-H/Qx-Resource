@@ -93,16 +93,12 @@ def update_local_rules():
 
 if __name__ == '__main__':
     update_local_rules()
-            
-            source_stats[url] = rules_count
-            print(f"Fetched {rules_count} rules from {url}")
-            
+       source_stats[url] = rules_count
+       print(f"Fetched {rules_count} rules from {url}")
         except Exception as e:
             print(f"Error fetching {url}: {str(e)}")
             continue
-    
     return sorted(all_rules), source_stats
-
 def update_local_rules():
     # 获取新的规则
     remote_rules, source_stats = get_remote_rules()
