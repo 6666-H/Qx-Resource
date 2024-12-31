@@ -75,10 +75,13 @@ def update_local_rules():
         current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
         date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
         
-        with open(file_path, 'a', encoding='utf-8') as f:  # 使用追加模式
-            if existing_rules:  # 已存在规则时，记录新增时间
-                f.write(f'\n# 更新于: {date_str}，新增规则 {len(new_rules)} 条\n')
+        # 使用追加模式
+        with open(file_path, 'a', encoding='utf-8') as f:
+            # 如果文件存在且有内容，添加一个换行
+            if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                f.write('\n')
             
+            f.write(f'# 更新于: {date_str}，新增规则 {len(new_rules)} 条\n')
             for rule in new_rules:
                 f.write(f'{rule}\n')
         
@@ -93,37 +96,4 @@ def update_local_rules():
 
 if __name__ == '__main__':
     update_local_rules()
-       source_stats[url] = rules_count
-       print(f"Fetched {rules_count} rules from {url}")
-        except Exception as e:
-            print(f"Error fetching {url}: {str(e)}")
-            continue
-    return sorted(all_rules), source_stats
-def update_local_rules():
-    # 获取新的规则
-    remote_rules, source_stats = get_remote_rules()
-    
-    try:
-        current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
-        date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # 保存到指定路径
-        with open('rules/ad_list.text', 'w', encoding='utf-8') as f:
-            f.write(f'# 自动维护: {date_str}\n')
-            f.write(f'# 总规则条数：{len(remote_rules)}\n')
-            
-            for rule in remote_rules:
-              if not rule.startswith('#'):
-                f.write(f'{rule}\n')
-                
-        print(f"\nSuccessfully updated rules at {date_str}")
-        print(f"Total unique rules: {len(remote_rules)}")
-        print("\nSource statistics (before deduplication):")
-        for url, count in source_stats.items():
-            print(f"{url}: {count} rules")
-        
-    except Exception as e:
-        print(f"Error writing to file: {str(e)}")
 
-if __name__ == '__main__':
-    update_local_rules()
