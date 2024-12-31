@@ -14,6 +14,7 @@ def get_remote_rules():
         'https://ruleset.skk.moe/List/non_ip/reject.conf',
         'https://raw.githubusercontent.com/dler-io/Rules/refs/heads/main/Surge/Surge%203/Provider/AdBlock.list',
         'https://ruleset.skk.moe/List/ip/reject.conf',
+        'https://raw.githubusercontent.com/NobyDa/Script/master/QuantumultX/AdRule.list',
         'https://adrules.top/adrules.list'
     ]))
     
