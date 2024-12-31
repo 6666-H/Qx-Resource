@@ -60,7 +60,7 @@ def update_local_rules():
         date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
         
         # 保存到指定路径
-        with open('rules/ad_list/ad-list', 'w', encoding='utf-8') as f:
+        with open('rules/ad_list.text', 'w', encoding='utf-8') as f:
             f.write(f'# 由whatshub.top自动维护 {date_str}\n')
             f.write(f'# 总规则条数：{len(remote_rules)}\n')
             
