@@ -56,6 +56,7 @@ def update_local_rules():
             f.write(f'# 总规则条数：{len(remote_rules)}\n')
             
             for rule in remote_rules:
+              if not rule.startswith('#'):
                 f.write(f'{rule}\n')
                 
         print(f"\nSuccessfully updated rules at {date_str}")
