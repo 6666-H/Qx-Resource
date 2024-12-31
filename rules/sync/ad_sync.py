@@ -19,7 +19,7 @@ def get_remote_rules():
         'https://adrules.top/adrules.list'
     ]))
     
-    all_rules = set()  # 使用set进行去重
+    all_rules = set()
     source_stats = {}
     
     headers = {
