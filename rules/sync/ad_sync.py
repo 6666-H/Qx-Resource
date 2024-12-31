@@ -5,6 +5,12 @@ from urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+def normalize_rule(rule):
+    """标准化规则，去除前缀差异，用于比较规则是否实质相同"""
+    if rule.startswith("HOST"):
+        return "DOMAIN" + rule[4:]
+    return rule
+
 def get_remote_rules():
     urls = [
         'https://whatshub.top/rule/AntiAD.list',
@@ -20,12 +26,12 @@ def get_remote_rules():
         'https://adrules.top/adrules.list'
     ]
     urls = list(set(urls))
-    all_rules = set()
+    all_rules = {}  # 使用字典存储规则，键为标准化后的规则
     source_stats = {}
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
-    
+    
     for url in urls:
         try:
             response = requests.get(url, headers=headers, timeout=10, verify=False)
@@ -35,53 +41,59 @@ def get_remote_rules():
             for line in content.splitlines():
                 line = line.strip()
                 if line and not line.startswith('!') and not line.startswith('#'):
-                    if line.startswith("HOST"):
-                        line = "DOMAIN" + line[4:]
-                    all_rules.add(line)
+                    normalized = normalize_rule(line)
+                    # 优先使用DOMAIN开头的规则
+                    if normalized not in all_rules or (
+                        normalized.startswith("DOMAIN") and all_rules[normalized].startswith("HOST")):
+                        all_rules[normalized] = normalized
                     rules_count += 1
             source_stats[url] = rules_count
             print(f"Fetched {rules_count} rules from {url}")
         except Exception as e:
             print(f"Error fetching {url}: {str(e)}")
             continue
-    return sorted(all_rules), source_stats
+    return sorted(all_rules.values()), source_stats
 
 def update_local_rules():
     remote_rules, source_stats = get_remote_rules()
     file_path = 'rules/ad_list.text'
-    existing_content = []
-    existing_rules = set()
-    
+    existing_rules = {}
+    
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
-                if line:
-                    if not line.startswith('#'):
-                        if line.startswith("HOST"):
-                            line = "DOMAIN" + line[4:]
-                        existing_rules.add(line)
-                    existing_content.append(line)
-    
-    all_rules = existing_rules | set(remote_rules)
-    
+                if line and not line.startswith('#'):
+                    normalized = normalize_rule(line)
+                    if normalized not in existing_rules or (
+                        normalized.startswith("DOMAIN") and existing_rules[normalized].startswith("HOST")):
+                        existing_rules[normalized] = normalized
+    
+    # 合并规则，优先使用DOMAIN开头的规则
+    all_rules = existing_rules.copy()
+    for rule in remote_rules:
+        normalized = normalize_rule(rule)
+        if normalized not in all_rules or (
+            normalized.startswith("DOMAIN") and all_rules[normalized].startswith("HOST")):
+            all_rules[normalized] = normalized
+    
     try:
         current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
         date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
-        
+        
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(f'# 更新时间: {date_str}\n')
             f.write(f'# 规则数量: {len(all_rules)}\n\n')
-            for rule in sorted(all_rules):
+            for rule in sorted(all_rules.values()):
                 f.write(f'{rule}\n')
-        
+        
         print(f"\nSuccessfully updated rules at {date_str}")
         print(f"Total rules: {len(all_rules)}")
         print(f"New rules added: {len(all_rules) - len(existing_rules)}")
         print("\nSource statistics (before deduplication):")
         for url, count in source_stats.items():
             print(f"{url}: {count} rules")
-        
+        
     except Exception as e:
         print(f"Error writing to file: {str(e)}")
 
