@@ -3,8 +3,17 @@ import datetime
 
 def get_remote_rules():
     urls = [
-        'https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/ChineseFilter/sections/adservers.txt',
-        'https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/ChineseFilter/sections/specific.txt'
+        'https://whatshub.top/rule/AntiAD.list',
+        'https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list',
+        'https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Reject_Rule/Reject_Rule.rule',
+        'https://raw.githubusercontent.com/zqzess/rule_for_quantumultX/refs/heads/master/QuantumultX/rules/AdBlock.list',
+        'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.list',
+        'https://raw.githubusercontent.com/Irrucky/Tool/main/Surge/rules/Reject.list',
+        'https://ruleset.skk.moe/List/non_ip/reject.conf'
+        'https://raw.githubusercontent.com/dler-io/Rules/refs/heads/main/Surge/Surge%203/Provider/AdBlock.list',
+        'https://ruleset.skk.moe/List/ip/reject.conf',
+        'https://adrules.top/adrules.list',
+        'https://ruleset.skk.moe/List/ip/reject.conf'
     ]
     
     rules = set()
