@@ -7,7 +7,6 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 def get_remote_rules():
     urls = list(set([
         'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/Redirect/Redirect.conf',
-        'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/SafeRedirect/SafeRedirect.conf',
         'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/Loon/BlockHTTPDNS/BlockHTTPDNS.plugin'
     ]))
   
