@@ -6,9 +6,13 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 def get_remote_rules():
     urls = list(set([
-        'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/Redirect/Redirect.conf',
-        'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/Loon/BlockHTTPDNS/BlockHTTPDNS.plugin'
+      'https://whatshub.top/rewrite/adultraplus.conf',
+        'https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%96%B0%E6%89%8B%E5%8F%8B%E5%A5%BD%E3%81%AE%E5%8E%BB%E5%B9%BF%E5%91%8A%E9%9B%86%E5%90%88.official.sgmodule',
+        'https://kelee.one/Tool/Loon/Plugin/WexinMiniPrograms_Remove_ads.plugin',
+        'https://whatshub.top/rewrite/wechatad.conf',
+        'https://raw.githubusercontent.com/chxm1023/Advertising/main/AppAd.conf'
     ]))
+     
   
     all_rules = set()  # 使用set进行去重
     source_stats = {}
@@ -48,7 +52,7 @@ def update_local_rules():
         date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
         
         # 保存到指定路径
-        with open('rewrite/ad/SafeRedirect.config', 'w', encoding='utf-8') as f:
+        with open('rewrite/ad/Ad.config', 'w', encoding='utf-8') as f:
             f.write(f'# 自动维护: {date_str}\n')
             f.write(f'# 总规则条数：{len(remote_rules)}\n')
             
