@@ -35,8 +35,8 @@ def get_remote_rules():
             for line in content.splitlines():
                 line = line.strip()
                 if line and not line.startswith('!') and not line.startswith('#'):
-                    if line.startswith("HOST-"):
-                        line = "DOMAIN-" + line[5:]
+                    if line.startswith("HOST"):
+                        line = "DOMAIN" + line[4:]
                     all_rules.add(line)
                     rules_count += 1
             source_stats[url] = rules_count
@@ -58,8 +58,8 @@ def update_local_rules():
                 line = line.strip()
                 if line:
                     if not line.startswith('#'):
-                        if line.startswith("HOST-"):
-                            line = "DOMAIN-" + line[5:]
+                        if line.startswith("HOST"):
+                            line = "DOMAIN" + line[4:]
                         existing_rules.add(line)
                     existing_content.append(line)
     
