@@ -1,6 +1,7 @@
 import requests
 import datetime
 import os
+import re
 from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -12,59 +13,67 @@ def get_remote_rules():
         'https://whatshub.top/rewrite/wechatad.conf',
         'https://raw.githubusercontent.com/chxm1023/Advertising/main/AppAd.conf'
     ]))
-  
-    all_rules = set()  # 使用set进行去重
+    
+    all_content = []  # Store all content including comments
     source_stats = {}
-    
+    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
-    
+    
     for url in urls:
         try:
             response = requests.get(url, headers=headers, timeout=10, verify=False)
             response.raise_for_status()
             content = response.text
-            
+            
             rules_count = 0
             for line in content.splitlines():
                 line = line.strip()
-                if line and not line.startswith('!') and not line.startswith('#'):
-                    all_rules.add(line)
-                    rules_count += 1
-            
+                if line:  # Keep all non-empty lines including comments
+                    all_content.append(line)
+                    if not line.startswith('#') and not line.startswith('!'):
+                        rules_count += 1
+            
             source_stats[url] = rules_count
             print(f"Fetched {rules_count} rules from {url}")
-            
+            
         except Exception as e:
             print(f"Error fetching {url}: {str(e)}")
             continue
-    
-    return sorted(all_rules), source_stats
+    
+    return all_content, source_stats
 
 def update_local_rules():
-    # 获取新的规则
-    remote_rules, source_stats = get_remote_rules()
-    
+    # Get rules with original format
+    content, source_stats = get_remote_rules()
+    
     try:
+        # Ensure directory exists
+        os.makedirs('rewrite/ad', exist_ok=True)
+        
         current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
         date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # 保存到指定路径
+        
+        # Count actual rules (excluding comments)
+        rule_count = sum(1 for line in content if line and not line.startswith('#') and not line.startswith('!'))
+        
+        # Save to specified path
         with open('rewrite/ad/Ad.config', 'w', encoding='utf-8') as f:
-            f.write(f'# 自动维护: {date_str}\n')
-            f.write(f'# 总规则条数：{len(remote_rules)}\n')
-            
-            for rule in remote_rules:
-              if not rule.startswith('#'):
-                f.write(f'{rule}\n')
-                
+            # Write header
+            f.write(f'# Auto maintained: {date_str}\n')
+            f.write(f'# Total rules: {rule_count}\n\n')
+            
+            # Write all content preserving original format
+            for line in content:
+                f.write(f'{line}\n')
+                
         print(f"\nSuccessfully updated rules at {date_str}")
-        print(f"Total unique rules: {len(remote_rules)}")
-        print("\nSource statistics (before deduplication):")
+        print(f"Total rules (excluding comments): {rule_count}")
+        print("\nSource statistics:")
         for url, count in source_stats.items():
             print(f"{url}: {count} rules")
-        
+        
     except Exception as e:
         print(f"Error writing to file: {str(e)}")
 
