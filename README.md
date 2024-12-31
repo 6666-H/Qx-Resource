@@ -5,7 +5,7 @@ This repository automatically updates ad blocking rules.
 ## Usage
 
 Subscribe to this list:
-https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/ad-list
+https://raw.githubusercontent.com/liuhenghhhh/QuantumultX-Rules-Real/refs/heads/main/ad-list
 
 ## Update Frequency
 
