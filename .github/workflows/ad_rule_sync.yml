@@ -23,7 +23,7 @@ jobs:
           
       - name: Update Rules
         run: |
-          python rules/sync/ad_sync.py
+          python rules/sync/Ad_sync.py
           
       - name: Commit Changes
         run: |
