@@ -1,5 +1,6 @@
 import requests
 import datetime
+import os
 from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -35,7 +36,7 @@ def get_remote_rules():
             for line in content.splitlines():
                 line = line.strip()
                 if line and not line.startswith('!') and not line.startswith('#'):
-                    all_rules.add(line)  # 添加到set中自动去重
+                    all_rules.add(line)
                     rules_count += 1
             
             source_stats[url] = rules_count
@@ -45,22 +46,24 @@ def get_remote_rules():
             print(f"Error fetching {url}: {str(e)}")
             continue
     
-    return sorted(all_rules), source_stats  # 返回排序后的列表
+    return sorted(all_rules), source_stats
 
 def update_local_rules():
     # 获取新的规则
     remote_rules, source_stats = get_remote_rules()
     
     try:
-        current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
-        date_str = current_time.strftime('%y-%m-%d %H:%M:%S')
+        # 确保目录存在
+        os.makedirs('rules/ad_list', exist_ok=True)
         
-        # 清空并重写文件
-        with open('rules/ad-list', 'w', encoding='utf-8') as f:
-            f.write(f'# 由二十年没去过星巴克维护 {date_str}\n')
+        current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
+        date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 保存到指定路径
+        with open('rules/ad_list/ad-list', 'w', encoding='utf-8') as f:
+            f.write(f'# 由whatshub.top自动维护 {date_str}\n')
             f.write(f'# 总规则条数：{len(remote_rules)}\n')
             
-            # 只写入这次获取的规则
             for rule in remote_rules:
                 f.write(f'{rule}\n')
                 
