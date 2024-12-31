@@ -2,10 +2,11 @@ import os
 import requests
 import datetime
 from urllib3.exceptions import InsecureRequestWarning
+
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 def get_remote_rules():
-    urls = list(set([
+    urls = [
         'https://whatshub.top/rule/AntiAD.list',
         'https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list',
         'https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Reject_Rule/Reject_Rule.rule',
@@ -17,44 +18,45 @@ def get_remote_rules():
         'https://ruleset.skk.moe/List/ip/reject.conf',
         'https://raw.githubusercontent.com/NobyDa/Script/master/QuantumultX/AdRule.list',
         'https://adrules.top/adrules.list'
-    ]))
-    
+    ]
+    urls = list(set(urls))
+    
     all_rules = set()
     source_stats = {}
-    
+    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
-    
+    
     for url in urls:
         try:
             response = requests.get(url, headers=headers, timeout=10, verify=False)
             response.raise_for_status()
             content = response.text
-            
+            
             rules_count = 0
             for line in content.splitlines():
                 line = line.strip()
                 if line and not line.startswith('!') and not line.startswith('#'):
                     all_rules.add(line)
                     rules_count += 1
-            
+            
             source_stats[url] = rules_count
             print(f"Fetched {rules_count} rules from {url}")
-            
+            
         except Exception as e:
             print(f"Error fetching {url}: {str(e)}")
             continue
-    
+    
     return sorted(all_rules), source_stats
 
 def update_local_rules():
     # 获取新的规则
     remote_rules, source_stats = get_remote_rules()
-    
+    
     # 文件路径
     file_path = 'rules/ad_list.text'
-    
+    
     # 读取已有规则（不包括注释行）
     existing_content = []
     existing_rules = set()
@@ -66,31 +68,31 @@ def update_local_rules():
                     if not line.startswith('#'):
                         existing_rules.add(line)
                     existing_content.append(line)
-    
+    
     # 合并已有规则和新规则
     all_rules = existing_rules | set(remote_rules)
-    
+    
     try:
         current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
         date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
-        
+        
         # 重写文件，更新头部信息
         with open(file_path, 'w', encoding='utf-8') as f:
             # 写入头部信息
             f.write(f'# 更新时间: {date_str}\n')
             f.write(f'# 规则数量: {len(all_rules)}\n\n')
-            
+            
             # 写入所有规则
             for rule in sorted(all_rules):
                 f.write(f'{rule}\n')
-        
+        
         print(f"\nSuccessfully updated rules at {date_str}")
         print(f"Total rules: {len(all_rules)}")
         print(f"New rules added: {len(all_rules) - len(existing_rules)}")
         print("\nSource statistics (before deduplication):")
         for url, count in source_stats.items():
             print(f"{url}: {count} rules")
-        
+        
     except Exception as e:
         print(f"Error writing to file: {str(e)}")
 
