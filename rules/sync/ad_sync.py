@@ -1,4 +1,3 @@
-
 import requests
 import datetime
 from urllib3.exceptions import InsecureRequestWarning
@@ -57,7 +56,7 @@ def update_local_rules():
         date_str = current_time.strftime('%y-%m-%d %H:%M:%S')
         
         # 清空并重写文件
-        with open('rules/ad_list', 'w', encoding='utf-8') as f:
+        with open('rules/ad-list', 'w', encoding='utf-8') as f:
             f.write(f'# 由二十年没去过星巴克维护 {date_str}\n')
             f.write(f'# 总规则条数：{len(remote_rules)}\n')
             
