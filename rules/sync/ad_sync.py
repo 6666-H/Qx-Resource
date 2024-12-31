@@ -5,51 +5,24 @@ from urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-def validate_rule(rule):
-    """验证规则格式并返回标准化的规则"""
-    # 移除所有空白字符
-    rule = rule.strip()
-    
-    # 跳过空行和注释
-    if not rule or rule.startswith(('!', '#')):
-        return None
-        
-    # 分割规则，只保留主要部分
-    parts = rule.split(',')
-    if not parts:
-        return None
-        
-    # 获取规则类型和域名
-    rule_type = parts[0]
-    if rule_type.startswith("HOST"):
-        rule_type = "DOMAIN"
-    
-    # 如果有域名部分
-    if len(parts) >= 2:
-        domain = parts[1]
-        return f"{rule_type},{domain}"
-    elif ',' not in rule:
-        # 处理可能没有类型前缀的规则
-        return f"DOMAIN,{rule}"
-        
-    return parts[0]
+def normalize_rule(rule):
+    return "DOMAIN" + rule[4:] if rule.startswith("HOST") else rule
 
 def read_rules_from_file(file_path):
     rules = {}
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                normalized = validate_rule(line.strip())
-                if normalized:
-                    rules[normalized] = normalized
+            for line in filter(lambda x: x.strip() and not x.startswith('#'), f):
+                normalized = normalize_rule(line.strip())
+                rules[normalized] = normalized
     return rules
 
 def process_rules(content):
     rules = {}
     count = 0
-    for line in content.splitlines():
-        normalized = validate_rule(line)
-        if normalized:
+    for line in filter(lambda x: x.strip() and not x.startswith(('!', '#')), content.splitlines()):
+        normalized = normalize_rule(line.strip())
+        if normalized not in rules or (normalized.startswith("DOMAIN") and rules[normalized].startswith("HOST")):
             rules[normalized] = normalized
             count += 1
     return rules, count
@@ -111,26 +84,25 @@ def write_rules_to_file(file_path, rules, source_stats):
 
 def update_local_rules():
     file_path = 'rules/ad_list.text'
-    # 确保目录存在
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    
     existing_rules = read_rules_from_file(file_path)
     remote_rules, source_stats = get_remote_rules()
     
-    # 合并现有规则和远程规则
+    # Merge existing and remote rules
     all_rules = {**existing_rules}
     for rule in remote_rules:
-        all_rules[rule] = rule
+        normalized = normalize_rule(rule)
+        if normalized not in all_rules or (normalized.startswith("DOMAIN") and all_rules[normalized].startswith("HOST")):
+            all_rules[normalized] = normalized
     
-    # 写入更新后的规则到文件
+    # Write updated rules to file
     current_time = write_rules_to_file(file_path, all_rules.values(), source_stats)
     if current_time:
-        print(f"\n成功更新规则于 {current_time}")
-        print(f"总规则数: {len(all_rules)}")
-        print(f"新增规则数: {len(all_rules) - len(existing_rules)}")
-        print("\n来源统计 (去重前):")
+        print(f"\nSuccessfully updated rules at {current_time}")
+        print(f"Total rules: {len(all_rules)}")
+        print(f"New rules added: {len(all_rules) - len(existing_rules)}")
+        print("\nSource statistics (before deduplication):")
         for url, count in source_stats.items():
-            print(f"{url}: {count} 条规则")
+            print(f"{url}: {count} rules")
 
 if __name__ == '__main__':
     update_local_rules()
