@@ -1,6 +1,6 @@
+import os
 import requests
 import datetime
-import os
 from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -38,6 +38,61 @@ def get_remote_rules():
                 if line and not line.startswith('!') and not line.startswith('#'):
                     all_rules.add(line)
                     rules_count += 1
+            
+            source_stats[url] = rules_count
+            print(f"Fetched {rules_count} rules from {url}")
+            
+        except Exception as e:
+            print(f"Error fetching {url}: {str(e)}")
+            continue
+    
+    return sorted(all_rules), source_stats
+
+def update_local_rules():
+    # 获取新的规则
+    remote_rules, source_stats = get_remote_rules()
+    
+    # 文件路径
+    file_path = 'rules/ad_list.text'
+    
+    # 读取已有规则
+    existing_rules = set()
+    if os.path.exists(file_path):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                rule = line.strip()
+                if rule and not rule.startswith('#'):
+                    existing_rules.add(rule)
+    
+    # 计算新增规则
+    new_rules = set(remote_rules) - existing_rules
+    
+    if not new_rules:
+        print("No new rules to add.")
+        return
+    
+    try:
+        current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
+        date_str = current_time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        with open(file_path, 'a', encoding='utf-8') as f:  # 使用追加模式
+            if existing_rules:  # 已存在规则时，记录新增时间
+                f.write(f'\n# 更新于: {date_str}，新增规则 {len(new_rules)} 条\n')
+            
+            for rule in new_rules:
+                f.write(f'{rule}\n')
+        
+        print(f"\nSuccessfully updated rules at {date_str}")
+        print(f"Total new rules added: {len(new_rules)}")
+        print("\nSource statistics (before deduplication):")
+        for url, count in source_stats.items():
+            print(f"{url}: {count} rules")
+        
+    except Exception as e:
+        print(f"Error writing to file: {str(e)}")
+
+if __name__ == '__main__':
+    update_local_rules()
             
             source_stats[url] = rules_count
             print(f"Fetched {rules_count} rules from {url}")
