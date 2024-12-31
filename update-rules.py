@@ -52,11 +52,12 @@ def update_local_rules():
     
     try:
         current_time = datetime.datetime.now() + datetime.timedelta(hours=8)
-        date_str = current_time.strftime('%Y%m%d%H%M')
+        date_str = current_time.strftime('%y-%m-%d %H:%M:%S')
         
         # 清空并重写文件
         with open('ad-list', 'w', encoding='utf-8') as f:
-            f.write(f'# 由whatshub.top自动维护 {date_str}\n')
+            f.write(f'# 由二十年没去过星巴克维护 {date_str}\n')
+            f.write(f'# 总规则条数：{len(remote_rules)}\n')
             
             # 只写入这次获取的规则
             for rule in remote_rules:
