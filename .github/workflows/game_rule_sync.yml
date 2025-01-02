@@ -1,4 +1,4 @@
-name: Update_Ad_Rules
+name: Update_Game_Rules
 
 on:
   schedule:
