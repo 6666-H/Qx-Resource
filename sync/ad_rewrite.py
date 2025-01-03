@@ -26,7 +26,7 @@ REWRITE_SOURCES = {
 
 def setup_directory():
     """创建必要的目录"""
-    Path(REWRITE_DIR).mkdir(exist_ok=True)
+   Path(os.path.join(REPO_PATH, REWRITE_DIR)).mkdir(parents=True, exist_ok=True)
 
 def download_and_merge_rules():
     """下载并合并重写规则"""
