@@ -1,4 +1,4 @@
-name: Update Filter Rules
+name: Update Ad Rules
 
 on:
   schedule:
