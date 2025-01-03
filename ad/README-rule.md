@@ -1,14 +1,14 @@
 # 广告拦截分流规则合集
 
 ## 更新时间
-2025-01-03 07:11:50
+2025-01-03 07:16:49
 
 ## 规则说明
 本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
 
 ## 规则来源
 - AntiAD: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/AntiAD.list
-- Adrules: https://adrules.top/adrules.list
+- Adrules: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/adrules.list
 - Ads_ml: https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list
 - Reject_Rule: https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Reject_Rule/Reject_Rule.rule
 - AdBlock: https://raw.githubusercontent.com/zqzess/rule_for_quantumultX/refs/heads/master/QuantumultX/rules/AdBlock.list
