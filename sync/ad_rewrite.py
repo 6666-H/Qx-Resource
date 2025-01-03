@@ -20,7 +20,7 @@ REWRITE_SOURCES = {
     "广告拦截精简版": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.conf",
     "去广告重写": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/chongxie.txt",
     "整合广告拦截": "https://raw.githubusercontent.com/DivineEngine/Profiles/master/Quantumult/Rewrite/Block/Advertising.conf",
-       "whatshub油管优化": "https://whatshub.top/rewrite/youtube.conf"
+    "whatshub油管优化": "https://whatshub.top/rewrite/youtube.conf"
 }
 
 def setup_directory():
