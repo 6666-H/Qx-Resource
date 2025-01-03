@@ -12,7 +12,7 @@ README_PATH = "README-rewrite.md"
 
 # 规则源列表
 REWRITE_SOURCES = {
- 
+     "可莉微信屏蔽": "https://kelee.one/Tool/Loon/Plugin/WexinMiniPrograms_Remove_ads.plugin",
     "whatshubs开屏屏蔽": "https://whatshub.top/rewrite/adultraplus.conf",
     "whatshub微信屏蔽": "https://whatshub.top/rewrite/wechatad.conf",
     "whatshub油管优化": "https://whatshub.top/rewrite/youtube.conf"
