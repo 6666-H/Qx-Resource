@@ -1,6 +1,7 @@
 import os
 import requests
 import datetime
+from datetime import timedelta
 import git
 from pathlib import Path
 
@@ -9,8 +10,7 @@ REPO_PATH = "ad"
 FILTER_DIR = "filter"
 OUTPUT_FILE = "ad_filter.list"
 README_PATH = "README-rule.md"
-# "AntiAD": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/AntiAD.list",
-# "Adrules": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/adrules.list",
+
 # 分流规则源列表
 FILTER_SOURCES = {
     "AD_ALL": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Ad_All.list",
@@ -25,18 +25,39 @@ FILTER_SOURCES = {
     "NobyDa_AdRule": "https://raw.githubusercontent.com/NobyDa/Script/master/QuantumultX/AdRule.list"
 }
 
+def get_beijing_time():
+    """获取北京时间"""
+    utc_now = datetime.datetime.utcnow()
+    beijing_time = utc_now + timedelta(hours=8)
+    return beijing_time
+
 def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, FILTER_DIR)).mkdir(parents=True, exist_ok=True)
 
 def download_and_merge_rules():
     """下载并合并分流规则"""
-    merged_content = f"""# 广告拦截分流规则合集
-# 更新时间：{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    beijing_time = get_beijing_time()
+    header = f"""# 广告拦截分流规则合集
+# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 # 合并自以下源：
 # {chr(10).join([f'# {name}: {url}' for name, url in FILTER_SOURCES.items()])}
 
 """
+    
+    # 用于存储去重后的规则
+    unique_rules = set()
+    # 用于存储所有注释
+    comments = []
+
+    # 规则格式转换映射
+    replacements = {
+        'HOST-SUFFIX,': 'DOMAIN-SUFFIX,',
+        'HOST,': 'DOMAIN,',
+        'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
+        'IP-CIDR,': 'IP-CIDR,',
+        'IP6-CIDR,': 'IP6-CIDR,'
+    }
 
     for name, url in FILTER_SOURCES.items():
         try:
@@ -45,42 +66,55 @@ def download_and_merge_rules():
             response.raise_for_status()
             content = response.text
 
-            # 添加分隔符和源内容
-            merged_content += f"\n# ======== {name} ========\n"
-            merged_content += content + "\n"
+            comments.append(f"\n# ======== {name} ========")
+            
+            # 处理每一行
+            for line in content.splitlines():
+                line = line.strip()
+                # 保存注释行
+                if line.startswith('#'):
+                    comments.append(line)
+                    continue
+                # 跳过空行
+                if not line:
+                    continue
+                
+                # 规则格式转换
+                for old, new in replacements.items():
+                    line = line.replace(old, new)
+                
+                # 添加到去重集合
+                if any(line.startswith(prefix) for prefix in ['DOMAIN', 'IP-CIDR', 'IP6-CIDR', 'USER-AGENT']):
+                    unique_rules.add(line)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
 
-    # 规则格式转换
-    replacements = {
-        'HOST-SUFFIX,': 'DOMAIN-SUFFIX,',
-        'HOST,': 'DOMAIN,',
-        'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
-        'IP-CIDR,': 'IP-CIDR,',
-        'IP6-CIDR,': 'IP6-CIDR,'
-    }
-    
-    # 进行全局替换
-    for old, new in replacements.items():
-        merged_content = merged_content.replace(old, new)
+    # 组合最终内容
+    final_content = header
+    final_content += "\n".join(comments)
+    final_content += "\n\n# ======== 去重后的规则 ========\n"
+    final_content += '\n'.join(sorted(unique_rules))
 
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, FILTER_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(merged_content)
+        f.write(final_content)
     
-    print(f"Successfully merged rules to {OUTPUT_FILE}")
+    print(f"Successfully merged {len(unique_rules)} unique rules to {OUTPUT_FILE}")
+    return len(unique_rules)
 
-def update_readme():
+def update_readme(rule_count):
     """更新 README.md"""
+    beijing_time = get_beijing_time()
     content = f"""# 广告拦截分流规则合集
 
 ## 更新时间
-{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 
 ## 规则说明
 本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
+当前规则数量：{rule_count}
 
 ## 规则来源
 {chr(10).join([f'- {name}: {url}' for name, url in FILTER_SOURCES.items()])}
@@ -97,7 +131,8 @@ def git_push():
     try:
         repo = git.Repo(REPO_PATH)
         repo.git.add(all=True)
-        repo.index.commit(f"Update rules: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        beijing_time = get_beijing_time()
+        repo.index.commit(f"Update rules: {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
         origin = repo.remote(name='origin')
         origin.push()
         print("Successfully pushed to repository")
@@ -106,8 +141,8 @@ def git_push():
 
 def main():
     setup_directory()
-    download_and_merge_rules()
-    update_readme()
+    rule_count = download_and_merge_rules()
+    update_readme(rule_count)
     git_push()
 
 if __name__ == "__main__":
