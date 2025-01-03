@@ -13,7 +13,7 @@ README_PATH = "README-rule.md"
 # "Adrules": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/adrules.list",
 # 分流规则源列表
 FILTER_SOURCES = {
-    "AD_ALL: "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Ad_All.list",
+    "AD_ALL": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Ad_All.list",
     "Ads_ml": "https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list",
     "Reject_Rule": "https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Reject_Rule/Reject_Rule.rule",
     "AdBlock": "https://raw.githubusercontent.com/zqzess/rule_for_quantumultX/refs/heads/master/QuantumultX/rules/AdBlock.list",
