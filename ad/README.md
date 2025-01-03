@@ -1,9 +1,13 @@
-# QuantumultX 广告拦截分流规则合集
+# 广告拦截分流规则合集
 
-最后更新时间：2025-01-03 02:21:41
+## 更新时间
+2025-01-03 02:51:31
 
-## 分流规则源
+## 规则说明
+本规则集合并自各个开源规则，主要用于广告拦截。
+已将规则统一为 Surge 格式，可兼容 Surge、Quantumult X、Clash 等。
 
+## 规则来源
 - AntiAD: https://whatshub.top/rule/AntiAD.list
 - Ads_ml: https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list
 - Reject_Rule: https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Reject_Rule/Reject_Rule.rule
@@ -15,3 +19,9 @@
 - SKK_IP_Reject: https://ruleset.skk.moe/List/ip/reject.conf
 - NobyDa_AdRule: https://raw.githubusercontent.com/NobyDa/Script/master/QuantumultX/AdRule.list
 - Adrules: https://adrules.top/adrules.list
+
+## 使用方法
+规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/filter/ad_filter.list
+
+## 规则统计
+合并规则条数: 379340
