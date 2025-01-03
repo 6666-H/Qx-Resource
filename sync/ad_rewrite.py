@@ -4,7 +4,7 @@ import datetime
 from pathlib import Path
 
 # 配置项
-REWRITE_DIR = "rewrite"
+REWRITE_DIR = "ad/rewrite"
 OUTPUT_FILE = "ad_rewrite.conf"
 README_PATH = "README-rewrite.md"
 
