@@ -5,7 +5,7 @@ import git
 from pathlib import Path
 
 # 配置项
-REPO_PATH = "你的本地仓库路径"
+REPO_PATH = "ad"
 REWRITE_DIR = "rewrite"
 OUTPUT_FILE = "ad_rewrite.conf"
 README_PATH = "README.md"
