@@ -24,7 +24,7 @@ jobs:
           pip install requests GitPython
           
       - name: Run update script
-        run: python sync/ad_sync.py
+        run: python sync/ad_rule.py
       - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions"
