@@ -1,9 +1,11 @@
 import os
 import requests
 import datetime
+import git
 from pathlib import Path
 
 # 配置项
+REPO_PATH = "ad"
 FILTER_DIR = "filter"
 OUTPUT_FILE = "ad_filter.list"
 README_PATH = "README-rule.md"
@@ -25,7 +27,7 @@ FILTER_SOURCES = {
 
 def setup_directory():
     """创建必要的目录"""
-    Path(FILTER_DIR).mkdir(exist_ok=True)
+    Path(os.path.join(REPO_PATH, FILTER_DIR)).mkdir(parents=True, exist_ok=True)
 
 def download_and_merge_rules():
     """下载并合并分流规则"""
@@ -35,17 +37,15 @@ def download_and_merge_rules():
 # {chr(10).join([f'# {name}: {url}' for name, url in FILTER_SOURCES.items()])}
 
 """
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    }
 
     for name, url in FILTER_SOURCES.items():
         try:
             print(f"Downloading rules from {name}...")
-            response = requests.get(url, headers=headers, timeout=30)
+            response = requests.get(url, timeout=30)
             response.raise_for_status()
             content = response.text
 
+            # 添加分隔符和源内容
             merged_content += f"\n# ======== {name} ========\n"
             merged_content += content + "\n"
 
@@ -61,10 +61,12 @@ def download_and_merge_rules():
         'IP6-CIDR,': 'IP6-CIDR,'
     }
     
+    # 进行全局替换
     for old, new in replacements.items():
         merged_content = merged_content.replace(old, new)
 
-    output_path = Path(FILTER_DIR) / OUTPUT_FILE
+    # 写入合并后的文件
+    output_path = os.path.join(REPO_PATH, FILTER_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(merged_content)
     
@@ -84,27 +86,29 @@ def update_readme():
 {chr(10).join([f'- {name}: {url}' for name, url in FILTER_SOURCES.items()])}
 
 ## 使用方法
-规则文件地址: https://raw.githubusercontent.com/${{github.repository}}/main/filter/ad_filter.list
+规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/filter/ad_filter.list
 """
     
-    with open(README_PATH, 'w', encoding='utf-8') as f:
+    with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
         f.write(content)
 
-def git_commit():
-    """提交更改"""
-    os.system('git config --local user.email "action@github.com"')
-    os.system('git config --local user.name "GitHub Action"')
-    os.system('git add .')
-    os.system('git commit -m "Update filter rules: {}"'.format(
-        datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    ))
-    os.system('git push')
+def git_push():
+    """提交更改到 Git"""
+    try:
+        repo = git.Repo(REPO_PATH)
+        repo.git.add(all=True)
+        repo.index.commit(f"Update rules: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        origin = repo.remote(name='origin')
+        origin.push()
+        print("Successfully pushed to repository")
+    except Exception as e:
+        print(f"Error pushing to repository: {str(e)}")
 
 def main():
     setup_directory()
     download_and_merge_rules()
     update_readme()
-    git_commit()
+    git_push()
 
 if __name__ == "__main__":
     main()
