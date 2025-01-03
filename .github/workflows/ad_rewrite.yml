@@ -1,4 +1,4 @@
-name: Update_Ad_Rewrite
+name: Update Ad Rewrite
 
 on:
   schedule:
@@ -24,7 +24,7 @@ jobs:
           pip install requests GitPython
           
       - name: Run update script
-        run: python rules/sync/ad_rewrite_sync.py
+        run: python sync/ad_rewrite.py
         
       - name: Configure Git
         run: |
