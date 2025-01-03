@@ -5,7 +5,7 @@ import git
 from pathlib import Path
 
 # 配置项
-REPO_PATH = "/home/runner/work/QuantumultX-Resource/QuantumultX-Resource"
+REPO_PATH = os.getenv('GITHUB_WORKSPACE', '.')
 REWRITE_DIR = "rewrite"
 OUTPUT_FILE = "ad_rewrite.conf"
 README_PATH = "README-rewrite.md"
@@ -92,6 +92,10 @@ def git_push():
     """提交更改到 Git"""
     try:
         repo = git.Repo(REPO_PATH)
+        # 设置 Git 用户信息
+        repo.config_writer().set_value("user", "name", "GitHub Actions").release()
+        repo.config_writer().set_value("user", "email", "actions@github.com").release()
+        
         if repo.is_dirty(untracked_files=True):
             repo.git.add(all=True)
             commit_message = f"Update rewrite rules: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
@@ -101,8 +105,6 @@ def git_push():
             print("Successfully pushed to repository")
         else:
             print("No changes to commit")
-    except git.exc.InvalidGitRepositoryError:
-        print(f"Invalid git repository: {REPO_PATH}")
     except Exception as e:
         print(f"Error pushing to repository: {str(e)}")
 
