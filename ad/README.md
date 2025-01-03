@@ -1,11 +1,17 @@
-# QuantumultX 广告拦截重写规则合集
+# QuantumultX 广告拦截分流规则合集
 
-最后更新时间：2025-01-03 01:05:00
+最后更新时间：2025-01-03 02:21:41
 
-## 重写规则源
+## 分流规则源
 
-- 墨鱼微信广告: https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/Applet.conf
-- 墨鱼去开屏V2.0: https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/StartUp.conf
-- 广告拦截精简版: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.conf
-- 去广告重写: https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/chongxie.txt
-- 整合广告拦截: https://raw.githubusercontent.com/DivineEngine/Profiles/master/Quantumult/Rewrite/Block/Advertising.conf
+- AntiAD: https://whatshub.top/rule/AntiAD.list
+- Ads_ml: https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list
+- Reject_Rule: https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Reject_Rule/Reject_Rule.rule
+- AdBlock: https://raw.githubusercontent.com/zqzess/rule_for_quantumultX/refs/heads/master/QuantumultX/rules/AdBlock.list
+- AdvertisingLite: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.list
+- Reject: https://raw.githubusercontent.com/Irrucky/Tool/main/Surge/rules/Reject.list
+- SKK_Reject: https://ruleset.skk.moe/List/non_ip/reject.conf
+- Dler_AdBlock: https://raw.githubusercontent.com/dler-io/Rules/refs/heads/main/Surge/Surge%203/Provider/AdBlock.list
+- SKK_IP_Reject: https://ruleset.skk.moe/List/ip/reject.conf
+- NobyDa_AdRule: https://raw.githubusercontent.com/NobyDa/Script/master/QuantumultX/AdRule.list
+- Adrules: https://adrules.top/adrules.list
