@@ -8,7 +8,7 @@ from pathlib import Path
 REPO_PATH = "ad"
 FILTER_DIR = "filter"
 OUTPUT_FILE = "ad_filter.list"
-README_PATH = "README.md"
+README_PATH = "README-rlue.md"
 
 # 分流规则源列表
 FILTER_SOURCES = {
