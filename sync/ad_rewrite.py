@@ -1,17 +1,17 @@
 import os
 import requests
 import datetime
-import git
 from pathlib import Path
 import urllib3
+import time
+import traceback
 
 # 禁用 SSL 警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # 配置项
-REPO_PATH = "ad"
 REWRITE_DIR = "rewrite"
-RULES_DIR = "rules"  # 新增：存放从网站抓取的规则
+RULES_DIR = "rules"
 OUTPUT_FILE = "ad_rewrite.conf"
 README_PATH = "README-rewrite.md"
 
@@ -36,33 +36,70 @@ GITHUB_SOURCES = {
 
 def setup_directory():
     """创建必要的目录"""
-    Path(os.path.join(REPO_PATH, REWRITE_DIR)).mkdir(parents=True, exist_ok=True)
-    Path(os.path.join(REPO_PATH, RULES_DIR)).mkdir(parents=True, exist_ok=True)
+    Path(REWRITE_DIR).mkdir(parents=True, exist_ok=True)
+    Path(RULES_DIR).mkdir(parents=True, exist_ok=True)
+
+def download_rule(url, headers=None):
+    """下载规则"""
+    if headers is None:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+    
+    for _ in range(3):  # 重试3次
+        try:
+            response = requests.get(url, headers=headers, timeout=30, verify=False)
+            response.raise_for_status()
+            return response.text
+        except Exception as e:
+            print(f"Error downloading {url}: {str(e)}")
+            time.sleep(2)
+    return None
 
 def download_website_rules():
-    """下载网站规则并保存到文件"""
+    """下载网站规则"""
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept': '*/*',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
         'Connection': 'keep-alive',
+        'Referer': 'https://whatshub.top/',
     }
 
     for name, url in WEBSITE_RULES.items():
         try:
-            print(f"Downloading rule from website: {name}")
-            response = requests.get(url, headers=headers, verify=False, timeout=30)
-            response.raise_for_status()
+            print(f"Downloading {name} from {url}")
+            content = download_rule(url, headers)
             
-            # 保存规则到文件
-            rule_path = os.path.join(REPO_PATH, RULES_DIR, f"{name}.conf")
-            with open(rule_path, 'w', encoding='utf-8') as f:
-                f.write(response.text)
-            
-            print(f"Successfully saved {name} rule")
-            
+            if content:
+                rule_path = os.path.join(RULES_DIR, f"{name}.conf")
+                with open(rule_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                print(f"Successfully saved {name}")
+            else:
+                print(f"Failed to download {name}")
+                
         except Exception as e:
-            print(f"Error downloading {name}: {str(e)}")
+            print(f"Error processing {name}: {str(e)}")
+
+def download_github_rules():
+    """下载 GitHub 规则"""
+    for name, url in GITHUB_SOURCES.items():
+        try:
+            print(f"Downloading {name} from {url}")
+            content = download_rule(url)
+            
+            if content:
+                rule_path = os.path.join(RULES_DIR, f"{name}.conf")
+                with open(rule_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                print(f"Successfully saved {name}")
+            else:
+                print(f"Failed to download {name}")
+                
+        except Exception as e:
+            print(f"Error processing {name}: {str(e)}")
 
 def merge_all_rules():
     """合并所有规则"""
@@ -71,42 +108,24 @@ def merge_all_rules():
 # 合并自以下源：
 """
 
-    # 添加网站规则源信息
-    for name, url in WEBSITE_RULES.items():
-        merged_content += f"# {name}: {url}\n"
-    
-    # 添加 GitHub 规则源信息
-    for name, url in GITHUB_SOURCES.items():
+    # 添加所有规则源信息
+    for name, url in {**WEBSITE_RULES, **GITHUB_SOURCES}.items():
         merged_content += f"# {name}: {url}\n"
 
-    # 首先合并本地保存的网站规则
-    for name in WEBSITE_RULES.keys():
-        rule_path = os.path.join(REPO_PATH, RULES_DIR, f"{name}.conf")
-        if os.path.exists(rule_path):
-            with open(rule_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                merged_content += f"\n# ======== {name} ========\n"
-                merged_content += content + "\n"
-
-    # 然后下载并合并 GitHub 规则
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-
-    for name, url in GITHUB_SOURCES.items():
-        try:
-            print(f"Downloading rules from {name}...")
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            
-            merged_content += f"\n# ======== {name} ========\n"
-            merged_content += response.text + "\n"
-            
-        except Exception as e:
-            print(f"Error downloading {name}: {str(e)}")
+    # 合并所有规则文件
+    for filename in os.listdir(RULES_DIR):
+        if filename.endswith('.conf'):
+            name = filename[:-5]
+            try:
+                with open(os.path.join(RULES_DIR, filename), 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    merged_content += f"\n# ======== {name} ========\n"
+                    merged_content += content + "\n"
+            except Exception as e:
+                print(f"Error processing {filename}: {str(e)}")
 
     # 保存合并后的文件
-    output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
+    output_path = os.path.join(REWRITE_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(merged_content)
     
@@ -130,27 +149,15 @@ def update_readme():
 {chr(10).join([f'- {name}: {url}' for name, url in GITHUB_SOURCES.items()])}
 """
     
-    with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
+    with open(README_PATH, 'w', encoding='utf-8') as f:
         f.write(content)
-
-def git_push():
-    """提交更改到 Git"""
-    try:
-        repo = git.Repo(REPO_PATH)
-        repo.git.add(all=True)
-        repo.index.commit(f"Update rewrite rules: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        origin = repo.remote(name='origin')
-        origin.push()
-        print("Successfully pushed to repository")
-    except Exception as e:
-        print(f"Error pushing to repository: {str(e)}")
 
 def main():
     setup_directory()
-    download_website_rules()  # 先下载网站规则
-    merge_all_rules()        # 然后合并所有规则
+    download_website_rules()
+    download_github_rules()
+    merge_all_rules()
     update_readme()
-    git_push()
 
 if __name__ == "__main__":
     main()
