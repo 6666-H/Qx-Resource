@@ -1,6 +1,7 @@
 import os
 import requests
 import datetime
+from datetime import timedelta
 import git
 from pathlib import Path
 
@@ -24,18 +25,32 @@ REWRITE_SOURCES = {
     "整合广告拦截": "https://raw.githubusercontent.com/weiyesing/QuantumultX/GenMuLu/ChongXieGuiZe/QuGuangGao/To%20advertise.conf"
 }
 
+def get_beijing_time():
+    """获取北京时间"""
+    utc_now = datetime.datetime.utcnow()
+    beijing_time = utc_now + timedelta(hours=8)
+    return beijing_time
+
 def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, REWRITE_DIR)).mkdir(parents=True, exist_ok=True)
 
 def download_and_merge_rules():
     """下载并合并重写规则"""
-    merged_content = f"""# 广告拦截重写规则合集
-# 更新时间：{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+    beijing_time = get_beijing_time()
+    header = f"""# 广告拦截重写规则合集
+# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 # 合并自以下源：
 # {chr(10).join([f'# {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
 
 """
+    
+    # 用于存储去重后的规则
+    unique_rules = set()
+    # 用于存储所有注释和其他配置
+    comments = []
+    # 用于存储 mitm 主机名
+    hostnames = set()
 
     for name, url in REWRITE_SOURCES.items():
         try:
@@ -44,32 +59,68 @@ def download_and_merge_rules():
             response.raise_for_status()
             content = response.text
 
-            # 添加分隔符和源内容
-            merged_content += f"\n# ======== {name} ========\n"
-            merged_content += content + "\n"
+            comments.append(f"\n# ======== {name} ========")
+            
+            # 处理每一行
+            for line in content.splitlines():
+                line = line.strip()
+                if not line:  # 跳过空行
+                    continue
+                    
+                if line.startswith('#'):  # 保存注释行
+                    comments.append(line)
+                    continue
+                    
+                if line.startswith('hostname'):  # 提取 hostname
+                    hosts = line.split('=')[1].strip().split(',')
+                    hostnames.update([h.strip() for h in hosts if h.strip()])
+                    continue
+                    
+                if line.startswith('^'):  # 正常重写规则
+                    unique_rules.add(line)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
 
+    # 组合最终内容
+    final_content = header
+    final_content += "\n".join(comments)
+    final_content += "\n\n# ======== 去重后的规则 ========\n"
+    final_content += '\n'.join(sorted(unique_rules))
+    
+    # 添加合并后的 hostname
+    if hostnames:
+        final_content += "\n\n# ======== Hostname ========\n"
+        final_content += f"hostname = {','.join(sorted(hostnames))}\n"
+
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(merged_content)
+        f.write(final_content)
     
-    print(f"Successfully merged rules to {OUTPUT_FILE}")
+    rule_count = len(unique_rules)
+    hostname_count = len(hostnames)
+    print(f"Successfully merged {rule_count} unique rules and {hostname_count} hostnames to {OUTPUT_FILE}")
+    return rule_count, hostname_count
 
-def update_readme():
+def update_readme(rule_count, hostname_count):
     """更新 README.md"""
+    beijing_time = get_beijing_time()
     content = f"""# 广告拦截重写规则合集
 
 ## 更新时间
-{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 
 ## 规则说明
-本重写规则集合并自各个开源规则，保持原始格式不变。
+本重写规则集合并自各个开源规则，去除重复规则。
+- 当前规则数量：{rule_count}
+- 当前 Hostname 数量：{hostname_count}
 
 ## 规则来源
 {chr(10).join([f'- {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
+
+## 使用方法
+规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/rewrite/ad_rewrite.conf
 """
     
     with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
@@ -80,7 +131,8 @@ def git_push():
     try:
         repo = git.Repo(REPO_PATH)
         repo.git.add(all=True)
-        repo.index.commit(f"Update rewrite rules: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        beijing_time = get_beijing_time()
+        repo.index.commit(f"Update rewrite rules: {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
         origin = repo.remote(name='origin')
         origin.push()
         print("Successfully pushed to repository")
@@ -89,8 +141,8 @@ def git_push():
 
 def main():
     setup_directory()
-    download_and_merge_rules()
-    update_readme()
+    rule_count, hostname_count = download_and_merge_rules()
+    update_readme(rule_count, hostname_count)
     git_push()
 
 if __name__ == "__main__":
