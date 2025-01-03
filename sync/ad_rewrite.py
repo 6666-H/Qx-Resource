@@ -8,12 +8,12 @@ from pathlib import Path
 REPO_PATH = "ad"
 REWRITE_DIR = "rewrite"
 OUTPUT_FILE = "ad_rewrite.conf"
-README_PATH = "README.md"
+README_PATH = "README-rewrite.md"
 
 # 规则源列表
 REWRITE_SOURCES = {
     "whatshubs开屏屏蔽": "https://whatshub.top/rewrite/adultraplus.conf",
-    "whatshub微信屏蔽": " https://whatshub.top/rewrite/wechatad.conf",
+    "whatshub微信屏蔽": "https://whatshub.top/rewrite/wechatad.conf",
     "whatshub油管优化": "https://whatshub.top/rewrite/youtube.conf",
     "surge去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%96%B0%E6%89%8B%E5%8F%8B%E5%A5%BD%E3%81%AE%E5%8E%BB%E5%B9%BF%E5%91%8A%E9%9B%86%E5%90%88.official.sgmodule",
     "chxm去广告": "https://raw.githubusercontent.com/chxm1023/Advertising/main/AppAd.conf",
@@ -31,63 +31,45 @@ def setup_directory():
 
 def download_and_merge_rules():
     """下载并合并重写规则"""
-    merged_content = f"""# 合并广告拦截重写规则
+    merged_content = f"""# 广告拦截重写规则合集
 # 更新时间：{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 # 合并自以下源：
 # {chr(10).join([f'# {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
 
 """
-    hostname_set = set()
 
     for name, url in REWRITE_SOURCES.items():
         try:
-            print(f"Downloading rewrite rules from {name}...")
-            response = requests.get(url)
+            print(f"Downloading rules from {name}...")
+            response = requests.get(url, timeout=30)
             response.raise_for_status()
             content = response.text
 
-            # 添加分隔符
+            # 添加分隔符和源内容
             merged_content += f"\n# ======== {name} ========\n"
-            
-            # 处理内容
-            lines = content.split('\n')
-            for line in lines:
-                # 跳过空行和注释行
-                if not line.strip() or line.strip().startswith('#'):
-                    continue
-                
-                # 提取 hostname
-                if 'hostname' in line.lower():
-                    hostnames = line.split('=')[-1].strip().split(',')
-                    hostname_set.update([h.strip() for h in hostnames if h.strip()])
-                    continue
-                
-                # 添加规则行
-                merged_content += line + '\n'
+            merged_content += content + "\n"
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
-
-    # 添加合并后的 hostname
-    if hostname_set:
-        merged_content += "\n# 合并后的 Hostname\n"
-        merged_content += "hostname = " + ", ".join(sorted(hostname_set))
 
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(merged_content)
     
-    print(f"Successfully merged rewrite rules to {OUTPUT_FILE}")
+    print(f"Successfully merged rules to {OUTPUT_FILE}")
 
 def update_readme():
     """更新 README.md"""
-    content = f"""# QuantumultX 广告拦截重写规则合集
+    content = f"""# 广告拦截重写规则合集
 
-最后更新时间：{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+## 更新时间
+{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-## 重写规则源
+## 规则说明
+本重写规则集合并自各个开源规则，保持原始格式不变。
 
+## 规则来源
 {chr(10).join([f'- {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
 """
     
