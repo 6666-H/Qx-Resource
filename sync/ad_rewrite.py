@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import datetime
 from datetime import timedelta
@@ -36,16 +37,85 @@ REWRITE_SOURCES = {
     "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js"
 }
 
+def convert_surge_to_quanx(line):
+    """将 Surge 模块规则转换为 QuantumultX 格式"""
+    if not line or line.startswith('#'):
+        return line
+
+    # 处理脚本类型
+    if 'script-path' in line:
+        try:
+            # 解析 Surge 脚本格式
+            if 'type=http-response' in line:
+                pattern = r'script-path\s*=\s*([^,]+).*argument\s*=\s*([^,]+)?'
+                match = re.search(pattern, line)
+                if match:
+                    script_path = match.group(1).strip()
+                    argument = match.group(2).strip() if match.group(2) else ''
+                    # 提取路径匹配规则
+                    path_match = re.search(r'pattern\s*=\s*([^,]+)', line)
+                    if path_match:
+                        path = path_match.group(1).strip()
+                        return f'url script-response-body {path} {script_path}'
+                    
+            elif 'type=http-request' in line:
+                pattern = r'script-path\s*=\s*([^,]+).*argument\s*=\s*([^,]+)?'
+                match = re.search(pattern, line)
+                if match:
+                    script_path = match.group(1).strip()
+                    argument = match.group(2).strip() if match.group(2) else ''
+                    # 提取路径匹配规则
+                    path_match = re.search(r'pattern\s*=\s*([^,]+)', line)
+                    if path_match:
+                        path = path_match.group(1).strip()
+                        return f'url script-request-body {path} {script_path}'
+
+        except Exception as e:
+            print(f"Error converting script rule: {line}")
+            return None
+
+    # 处理重定向规则
+    elif '302' in line or '307' in line:
+        try:
+            pattern = r'(.+?)\s+30[27]\s+(.+)'
+            match = re.search(pattern, line)
+            if match:
+                source, destination = match.groups()
+                return f'url 302 {source.strip()} {destination.strip()}'
+        except Exception as e:
+            print(f"Error converting redirect rule: {line}")
+            return None
+
+    # 处理 URL 重写规则
+    elif '^http' in line:
+        try:
+            if 'reject' in line:
+                # 处理 reject 类型规则
+                pattern = r'(.+?)\s+reject'
+                match = re.search(pattern, line)
+                if match:
+                    return f'url reject-200 {match.group(1).strip()}'
+            else:
+                # 处理其他重写规则
+                parts = line.split()
+                if len(parts) >= 2:
+                    return f'url {parts[1]} {parts[0]}'
+        except Exception as e:
+            print(f"Error converting URL rewrite rule: {line}")
+            return None
+
+    return line
+
 class RuleProcessor:
     def __init__(self):
-        self.REPO_PATH = "ad"  # 修改回原来的目录
+        self.REPO_PATH = "ad"
         self.REWRITE_DIR = "rewrite"
         self.OUTPUT_FILE = "ad_rewrite.conf"
         self.README_PATH = "README-rewrite.md"
         self.RETRY_COUNT = 3
         self.TIMEOUT = 30
         
-         # 确保目录存在
+        # 确保目录存在
         self.setup_directory()
 
     def setup_directory(self):
@@ -76,7 +146,22 @@ class RuleProcessor:
         """验证规则格式是否正确"""
         if not rule or rule.startswith('#'):
             return False
-        return any(pattern in rule for pattern in ['url', 'reject', 'script', '^http'])
+        # 扩展规则验证
+        valid_patterns = [
+            'url reject',
+            'url reject-200',
+            'url reject-img',
+            'url reject-dict',
+            'url reject-array',
+            'url script-response-body',
+            'url script-request-body',
+            'url script-response-header',
+            'url script-request-header',
+            'url 302',
+            'url 307',
+            '^http'
+        ]
+        return any(pattern in rule for pattern in valid_patterns)
 
     def parse_rules(self, content):
         """解析规则内容"""
@@ -100,8 +185,11 @@ class RuleProcessor:
                     hostnames.update(h.strip() for h in hosts if h.strip())
                 except IndexError:
                     print(f"Warning: Invalid hostname line: {line}")
-            elif self.is_valid_rule(line):
-                rules.add(line)
+            else:
+                # 转换 Surge 规则为 QuantumultX 格式
+                converted_rule = convert_surge_to_quanx(line)
+                if converted_rule and self.is_valid_rule(converted_rule):
+                    rules.add(converted_rule)
 
         return rules, hostnames, comments
 
