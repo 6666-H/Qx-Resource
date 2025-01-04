@@ -59,13 +59,13 @@ def download_and_merge_rules():
 # {chr(10).join([f'# {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
 
 """
-    
+    
     # 用于存储去重后的规则
     unique_rules = set()
     # 用于存储所有分类规则
     classified_rules = {}
-    # 用于存储 mitm 主机名
-    mitm_hostnames = set()
+    # 用于存储所有 hostname
+    all_hostnames = set()
     # 用于存储其它脚本规则
     other_rules = []
 
@@ -75,14 +75,28 @@ def download_and_merge_rules():
             response = requests.get(url, timeout=30)
             response.raise_for_status()
             content = response.text
-            
+            
             # 处理每一行
             current_tag = None
             for line in content.splitlines():
                 line = line.strip()
                 if not line:  # 跳过空行
                     continue
-                
+                
+                # 提取所有的 hostname
+                if 'hostname' in line.lower():
+                    # 处理不同格式的 hostname 行
+                    if '=' in line:
+                        hosts = line.split('=')[1].strip()
+                    else:
+                        hosts = line.replace('hostname', '').strip()
+                    
+                    if hosts:
+                        # 分割并清理 hostname
+                        host_list = hosts.split(',')
+                        all_hostnames.update([h.strip() for h in host_list if h.strip()])
+                    continue
+                
                 # 检查标签 [tag]
                 if line.startswith('[') and line.endswith(']'):
                     current_tag = line[1:-1].upper()  # 转换为大写
@@ -92,17 +106,13 @@ def download_and_merge_rules():
                     continue
 
                 if current_tag:  # 当前行属于某个标签
-                    classified_rules[f'[{current_tag}]'].append(line)
+                    if current_tag.upper() != 'MITM':  # 跳过 MITM 部分的规则
+                        classified_rules[f'[{current_tag}]'].append(line)
                     continue
 
-                if line.startswith('hostname'):  # 提取 hostname
-                    hosts = line.split('=')[1].strip().split(',')
-                    mitm_hostnames.update([h.strip() for h in hosts if h.strip()])
-                    continue
-                
                 if line.startswith('^'):  # 正常重写规则
                     unique_rules.add(line)
-                
+                
                 # 处理 JavaScript 脚本
                 if line.endswith('.js'):
                     other_rules.append(line)
@@ -112,23 +122,23 @@ def download_and_merge_rules():
 
     # 组合最终内容
     final_content = header
-    
+    
     # 先输出分类规则
     for tag, rules in classified_rules.items():
-        if rules:  # 只有当规则不为空时才输出
+        if rules and tag.upper() != '[MITM]':  # 跳过 MITM 标签的规则
             final_content += f"\n{tag}\n"  # 直接输出带[]的标签
             final_content += '\n'.join(sorted(rules)) + '\n'
-    
-    # 合并 mitm 的 hostname
-    if mitm_hostnames:
+    
+    # 输出合并后的所有 hostname
+    if all_hostnames:
         final_content += "\n[MITM]\n"
-        final_content += f"hostname = {','.join(sorted(mitm_hostnames))}\n"
+        final_content += f"hostname = {', '.join(sorted(all_hostnames))}\n"
 
     # 去重后的规则
     if unique_rules:
         final_content += "\n[REWRITE]\n"
         final_content += '\n'.join(sorted(unique_rules)) + '\n'
-    
+    
     # 其它脚本规则
     if other_rules:
         final_content += "\n[SCRIPT]\n"
@@ -138,11 +148,11 @@ def download_and_merge_rules():
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(final_content)
-    
+    
     rule_count = len(unique_rules)
-    hostname_count = len(mitm_hostnames)
+    hostname_count = len(all_hostnames)
     script_count = len(other_rules)
-    print(f"Successfully merged {rule_count} unique rules, {hostname_count} mitm hostnames, and {script_count} scripts to {OUTPUT_FILE}")
+    print(f"Successfully merged {rule_count} unique rules, {hostname_count} hostnames, and {script_count} scripts to {OUTPUT_FILE}")
     return rule_count, hostname_count, script_count
 
 def update_readme(rule_count, hostname_count, script_count):
@@ -156,7 +166,7 @@ def update_readme(rule_count, hostname_count, script_count):
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
 - 当前规则数量：{rule_count}
-- 当前 mitm 主机名数量：{hostname_count}
+- 当前 hostname 数量：{hostname_count}
 - 当前 脚本 数量：{script_count}
 
 ## 规则来源
@@ -165,7 +175,7 @@ def update_readme(rule_count, hostname_count, script_count):
 ## 使用方法
 规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/rewrite/ad_rewrite.conf
 """
-    
+    
     with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
         f.write(content)
 
