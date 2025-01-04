@@ -38,14 +38,14 @@ REWRITE_SOURCES = {
 
 class RuleProcessor:
     def __init__(self):
-        self.REPO_PATH = "."  # 修改为当前目录
+        self.REPO_PATH = "ad"  # 修改回原来的目录
         self.REWRITE_DIR = "rewrite"
         self.OUTPUT_FILE = "ad_rewrite.conf"
         self.README_PATH = "README-rewrite.md"
         self.RETRY_COUNT = 3
         self.TIMEOUT = 30
         
-        # 确保目录存在
+         # 确保目录存在
         self.setup_directory()
 
     def setup_directory(self):
