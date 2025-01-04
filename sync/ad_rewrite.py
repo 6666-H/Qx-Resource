@@ -66,10 +66,13 @@ def download_and_merge_rules():
     unique_rules = set()
     # 用于存储所有注释和其他配置
     comments = []
+    # 用于存储分类的规则
+    classified_rules = {}
+    
     # 用于存储 mitm 主机名
-    hostnames = set()
-    # 用于存储 js 脚本
-    scripts = set()
+    mitm_hostnames = set()
+    # 用于存储其它脚本规则
+    other_rules = []
 
     for name, url in REWRITE_SOURCES.items():
         try:
@@ -81,25 +84,38 @@ def download_and_merge_rules():
             comments.append(f"\n# ======== {name} ========")
             
             # 处理每一行
+            current_tag = None
             for line in content.splitlines():
                 line = line.strip()
                 if not line:  # 跳过空行
                     continue
-                    
+                
                 if line.startswith('#'):  # 保存注释行
                     comments.append(line)
                     continue
-                    
+                
+                # 检查标签 [tag]，并记录当前标签
+                if line.startswith('[') and line.endswith(']'):
+                    current_tag = line[1:-1]
+                    if current_tag not in classified_rules:
+                        classified_rules[current_tag] = []
+                    continue
+
+                if current_tag:  # 当前行属于某个标签
+                    classified_rules[current_tag].append(line)
+                    continue
+
                 if line.startswith('hostname'):  # 提取 hostname
                     hosts = line.split('=')[1].strip().split(',')
-                    hostnames.update([h.strip() for h in hosts if h.strip()])
+                    mitm_hostnames.update([h.strip() for h in hosts if h.strip()])
                     continue
-                    
+                
                 if line.startswith('^'):  # 正常重写规则
                     unique_rules.add(line)
                 
-                if line.endswith('.js'):  # 捕获脚本文件
-                    scripts.add(line)
+                # 处理 JavaScript 脚本
+                if line.endswith('.js'):
+                    other_rules.append(line)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
@@ -107,18 +123,25 @@ def download_and_merge_rules():
     # 组合最终内容
     final_content = header
     final_content += "\n".join(comments)
+    
+    # 合并 mitm 的 hostname
+    if mitm_hostnames:
+        final_content += "\n\n# ======== mitm ========\n"
+        final_content += f"hostname = {','.join(sorted(mitm_hostnames))}\n"
+
+    # 分类规则输出
+    for tag, rules in classified_rules.items():
+        final_content += f"\n\n# ======== {tag} ========\n"
+        final_content += '\n'.join(sorted(rules))
+
+    # 去重后的规则
     final_content += "\n\n# ======== 去重后的规则 ========\n"
     final_content += '\n'.join(sorted(unique_rules))
     
-    # 添加合并后的 hostname
-    if hostnames:
-        final_content += "\n\n# ======== Hostname ========\n"
-        final_content += f"hostname = {','.join(sorted(hostnames))}\n"
-    
-    # 添加脚本
-    if scripts:
-        final_content += "\n\n# ======== 脚本 ========\n"
-        final_content += '\n'.join(sorted(scripts))
+    # 其它脚本规则
+    if other_rules:
+        final_content += "\n\n# ======== 其它脚本 ========\n"
+        final_content += '\n'.join(sorted(other_rules))
 
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
@@ -126,9 +149,9 @@ def download_and_merge_rules():
         f.write(final_content)
     
     rule_count = len(unique_rules)
-    hostname_count = len(hostnames)
-    script_count = len(scripts)
-    print(f"Successfully merged {rule_count} unique rules, {hostname_count} hostnames, and {script_count} scripts to {OUTPUT_FILE}")
+    hostname_count = len(mitm_hostnames)
+    script_count = len(other_rules)
+    print(f"Successfully merged {rule_count} unique rules, {hostname_count} mitm hostnames, and {script_count} scripts to {OUTPUT_FILE}")
     return rule_count, hostname_count, script_count
 
 def update_readme(rule_count, hostname_count, script_count):
@@ -142,7 +165,7 @@ def update_readme(rule_count, hostname_count, script_count):
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
 - 当前规则数量：{rule_count}
-- 当前 Hostname 数量：{hostname_count}
+- 当前 mitm 主机名数量：{hostname_count}
 - 当前 脚本 数量：{script_count}
 
 ## 规则来源
