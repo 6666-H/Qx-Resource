@@ -60,7 +60,10 @@ class RuleProcessor:
                 print(f"Downloading rules from {name}... (Attempt {attempt + 1})")
                 response = requests.get(url, timeout=self.TIMEOUT)
                 response.raise_for_status()
-                return response.text
+                content = response.text
+                print(f"Downloaded content for {name}:")
+                print(content[:500])  # 打印前500个字符用于调试
+                return content
             except Exception as e:
                 if attempt == self.RETRY_COUNT - 1:
                     print(f"Failed to download {name} after {self.RETRY_COUNT} attempts: {str(e)}")
@@ -72,11 +75,11 @@ class RuleProcessor:
     def is_valid_rule(self, rule):
         if not rule or rule.startswith('#'):
             return False
-            
+                
         if 'url' in rule:
             try:
                 parts = rule.split()
-                if len(parts) < 3:
+                if len(parts) < 2:  # 修改判断条件
                     return False
                 if not any(parts[1] == pattern for pattern in [
                     'reject', 'reject-200', 'reject-img', 'reject-dict', 'reject-array',
@@ -85,11 +88,12 @@ class RuleProcessor:
                     '302', '307'
                 ]):
                     return False
-                if not (parts[2].startswith('^http') or parts[2].startswith('http')):
+                # 放宽URL格式的验证
+                if len(parts) > 2 and not (parts[2].startswith('^http') or parts[2].startswith('http') or parts[2].startswith('*')):
                     return False
             except:
                 return False
-                
+                    
         return True
 
     def convert_surge_to_quanx(self, line):
@@ -99,6 +103,23 @@ class RuleProcessor:
         try:
             line = line.replace('\t', ' ').strip()
             
+            # 处理 Surge URL-REGEX 格式
+            if 'URL-REGEX' in line or 'url-regex' in line:
+                pattern = r'URL-REGEX,([^,]+),*(REJECT|REJECT-TINYGIF|REJECT-IMG|REJECT-DICT|REJECT-200|REJECT-ARRAY)'
+                match = re.search(pattern, line, re.IGNORECASE)
+                if match:
+                    url, reject_type = match.groups()
+                    return f'url reject-200 {url.strip()}'
+
+            # 处理 Surge DOMAIN 格式
+            if 'DOMAIN' in line:
+                pattern = r'DOMAIN,([^,]+),*(REJECT|REJECT-TINYGIF|REJECT-IMG|REJECT-DICT|REJECT-200|REJECT-ARRAY)'
+                match = re.search(pattern, line)
+                if match:
+                    domain = match.group(1)
+                    return f'url reject-200 {domain.strip()}'
+
+            # 处理脚本
             if 'script-path' in line:
                 if 'type=http-response' in line:
                     pattern = r'pattern\s*=\s*([^,]+).*script-path\s*=\s*([^,\s]+)'
@@ -106,7 +127,6 @@ class RuleProcessor:
                     if match:
                         path, script_path = match.groups()
                         return f'url script-response-body {path.strip()} {script_path.strip()}'
-                        
                 elif 'type=http-request' in line:
                     pattern = r'pattern\s*=\s*([^,]+).*script-path\s*=\s*([^,\s]+)'
                     match = re.search(pattern, line)
@@ -114,6 +134,7 @@ class RuleProcessor:
                         path, script_path = match.groups()
                         return f'url script-request-body {path.strip()} {script_path.strip()}'
 
+            # 处理重定向
             elif '302' in line or '307' in line:
                 pattern = r'([^\s]+)\s+30[27]\s+([^\s]+)'
                 match = re.search(pattern, line)
@@ -121,13 +142,20 @@ class RuleProcessor:
                     source, destination = match.groups()
                     return f'url 302 {source.strip()} {destination.strip()}'
 
-            elif 'reject' in line:
+            # 处理普通reject规则
+            elif 'reject' in line.lower():
                 if '^http' in line or 'http' in line:
                     pattern = r'([^\s]+)\s+reject'
                     match = re.search(pattern, line)
                     if match:
                         return f'url reject-200 {match.group(1).strip()}'
+                else:
+                    pattern = r'([^,\s]+),\s*reject'
+                    match = re.search(pattern, line)
+                    if match:
+                        return f'url reject-200 {match.group(1).strip()}'
 
+            # 处理其他 URL 规则
             elif '^http' in line or 'http' in line:
                 parts = line.split()
                 if len(parts) >= 2:
@@ -135,6 +163,7 @@ class RuleProcessor:
 
         except Exception as e:
             print(f"Error converting rule: {line}")
+            print(f"Error details: {str(e)}")
             return None
 
         return line
