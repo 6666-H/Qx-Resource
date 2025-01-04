@@ -1,13 +1,17 @@
-# 广告拦截重写规则合集
+# QuantumultX 重写规则合集
 
 ## 更新时间
-2025-01-04 22:28:23 (北京时间)
+2025-01-04 23:15:34 (北京时间)
 
 ## 规则说明
-本重写规则集合并自各个开源规则，去除重复规则。
-- 当前重写规则数量：3304
-- 当前脚本规则数量：163
-- 当前 Hostname 数量：1408
+本重写规则集合并自各个开源规则，适用于 QuantumultX。
+自动处理规则去重、格式转换、脚本处理等。
+
+## 规则统计
+- 重写规则数量：16
+- 脚本规则数量：812
+- JavaScript文件数量：13
+- MitM主机名数量：1179
 
 ## 规则来源
 - whatshubs开屏屏蔽: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rewrite/adultraplus.conf
@@ -34,5 +38,18 @@
 - 汤头条解锁: https://raw.githubusercontent.com/Yu9191/Rewrite/main/lsp/Tangtoutiao.js
 - 1998解锁: https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js
 
-## 使用方法
-规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/rewrite/ad_rewrite.conf
+## 使用说明
+1. 重写规则地址：
+https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/ad/rewrite/ad_rewrite.conf
+
+2. 使用方法：
+- 打开 QuantumultX
+- 进入配置文件编辑
+- 在 [rewrite_remote] 部分添加规则地址
+- 在 [mitm] 部分添加所需主机名
+- 开启 MITM 功能并信任证书
+
+## 注意事项
+1. 首次使用需要安装并信任 MITM 证书
+2. 部分规则可能需要开启 MITM 才能生效
+3. 规则更新时间：每日自动更新
