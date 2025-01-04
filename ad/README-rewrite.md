@@ -1,12 +1,12 @@
 # 广告拦截重写规则合集
 
 ## 更新时间
-2025-01-04 23:41:28 (北京时间)
+2025-01-04 23:52:12 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
-- 当前规则数量：177
-- 当前 Hostname 数量：27
+- 当前规则数量：618
+- 当前 Hostname 数量：2120
 
 ## 规则来源
 - 阻止常见的 HTTPDNS 服务器: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule
