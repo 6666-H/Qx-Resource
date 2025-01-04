@@ -4,9 +4,6 @@ import datetime
 from datetime import timedelta
 import git
 from pathlib import Path
-import time
-from tqdm import tqdm
-import re
 
 class RuleProcessor:
     def __init__(self):
@@ -32,6 +29,7 @@ class RuleProcessor:
         """下载规则，带重试机制"""
         for attempt in range(self.RETRY_COUNT):
             try:
+                print(f"Downloading rules from {name}... (Attempt {attempt + 1})")
                 response = requests.get(url, timeout=self.TIMEOUT)
                 response.raise_for_status()
                 return response.text
@@ -39,15 +37,14 @@ class RuleProcessor:
                 if attempt == self.RETRY_COUNT - 1:
                     print(f"Failed to download {name} after {self.RETRY_COUNT} attempts: {str(e)}")
                     return None
-                time.sleep(2)  # 重试前等待
+                print(f"Retry after error: {str(e)}")
+                time.sleep(2)
         return None
 
     def is_valid_rule(self, rule):
         """验证规则格式是否正确"""
-        # 添加规则格式的基本验证
         if not rule or rule.startswith('#'):
             return False
-        # 检查是否包含基本的重写规则元素
         return any(pattern in rule for pattern in ['url', 'reject', 'script', '^http'])
 
     def parse_rules(self, content):
@@ -83,15 +80,18 @@ class RuleProcessor:
         all_hostnames = set()
         all_comments = []
         
-        with tqdm(total=len(sources), desc="Downloading rules") as pbar:
-            for name, url in sources.items():
-                content = self.download_rules(name, url)
-                if content:
-                    rules, hostnames, comments = self.parse_rules(content)
-                    all_rules.update(rules)
-                    all_hostnames.update(hostnames)
-                    all_comments.extend([f"\n# ======== {name} ========"] + comments)
-                pbar.update(1)
+        total_sources = len(sources)
+        current = 0
+        
+        for name, url in sources.items():
+            current += 1
+            print(f"Processing {current}/{total_sources}: {name}")
+            content = self.download_rules(name, url)
+            if content:
+                rules, hostnames, comments = self.parse_rules(content)
+                all_rules.update(rules)
+                all_hostnames.update(hostnames)
+                all_comments.extend([f"\n# ======== {name} ========"] + comments)
 
         return all_rules, all_hostnames, all_comments
 
@@ -120,6 +120,7 @@ class RuleProcessor:
         try:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(content)
+            print(f"Successfully saved rules to {output_path}")
             return True
         except Exception as e:
             print(f"Error saving rules: {str(e)}")
@@ -132,7 +133,6 @@ def main():
     
     if processor.save_rules(content):
         print(f"Successfully processed {len(rules)} rules and {len(hostnames)} hostnames")
-        # 这里可以添加git提交相关的代码
     else:
         print("Failed to save rules")
 
