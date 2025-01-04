@@ -27,6 +27,7 @@ REWRITE_SOURCES = {
     "整合广告拦截": "https://raw.githubusercontent.com/weiyesing/QuantumultX/GenMuLu/ChongXieGuiZe/QuGuangGao/To%20advertise.conf",
     "YouTube去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/Youtube%20%E5%8E%BB%E5%B9%BF%E5%91%8A%20(%E4%B8%8D%E5%8E%BB%E8%B4%B4%E7%89%87).official.sgmodule",
     "YouTube双语翻译": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/YouTube%E7%BF%BB%E8%AF%91.beta.sgmodule",
+  
     "小红书去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule",
     "微博去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%BE%AE%E5%8D%9A%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule",
     "小黑盒去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E9%BB%91%E7%9B%92%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule",
@@ -67,6 +68,8 @@ def download_and_merge_rules():
     comments = []
     # 用于存储 mitm 主机名
     hostnames = set()
+    # 用于存储 js 脚本
+    scripts = set()
 
     for name, url in REWRITE_SOURCES.items():
         try:
@@ -94,6 +97,9 @@ def download_and_merge_rules():
                     
                 if line.startswith('^'):  # 正常重写规则
                     unique_rules.add(line)
+                
+                if line.endswith('.js'):  # 捕获脚本文件
+                    scripts.add(line)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
@@ -108,6 +114,11 @@ def download_and_merge_rules():
     if hostnames:
         final_content += "\n\n# ======== Hostname ========\n"
         final_content += f"hostname = {','.join(sorted(hostnames))}\n"
+    
+    # 添加脚本
+    if scripts:
+        final_content += "\n\n# ======== 脚本 ========\n"
+        final_content += '\n'.join(sorted(scripts))
 
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
@@ -116,10 +127,11 @@ def download_and_merge_rules():
     
     rule_count = len(unique_rules)
     hostname_count = len(hostnames)
-    print(f"Successfully merged {rule_count} unique rules and {hostname_count} hostnames to {OUTPUT_FILE}")
-    return rule_count, hostname_count
+    script_count = len(scripts)
+    print(f"Successfully merged {rule_count} unique rules, {hostname_count} hostnames, and {script_count} scripts to {OUTPUT_FILE}")
+    return rule_count, hostname_count, script_count
 
-def update_readme(rule_count, hostname_count):
+def update_readme(rule_count, hostname_count, script_count):
     """更新 README.md"""
     beijing_time = get_beijing_time()
     content = f"""# 广告拦截重写规则合集
@@ -131,6 +143,7 @@ def update_readme(rule_count, hostname_count):
 本重写规则集合并自各个开源规则，去除重复规则。
 - 当前规则数量：{rule_count}
 - 当前 Hostname 数量：{hostname_count}
+- 当前 脚本 数量：{script_count}
 
 ## 规则来源
 {chr(10).join([f'- {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
@@ -157,8 +170,8 @@ def git_push():
 
 def main():
     setup_directory()
-    rule_count, hostname_count = download_and_merge_rules()
-    update_readme(rule_count, hostname_count)
+    rule_count, hostname_count, script_count = download_and_merge_rules()
+    update_readme(rule_count, hostname_count, script_count)
     git_push()
 
 if __name__ == "__main__":
