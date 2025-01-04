@@ -79,35 +79,43 @@ class RuleProcessor:
         try:
             line = line.replace('\t', ' ').strip()
             
-            # 1. 处理 Surge 脚本规则
-            if any(keyword in line for keyword in ['type=http-response', 'type=http-request', 'script-path=']):
+            # 处理 AND 规则
+            if line.startswith('AND,'):
+                url_regex = re.search(r'URL-REGEX,"([^"]+)"', line)
+                user_agent = re.search(r'USER-AGENT,"([^"]+)"', line)
+                if url_regex:
+                    return f'url reject {url_regex.group(1)}'
+
+            # 处理 DOMAIN 规则
+            if line.startswith('DOMAIN,'):
+                parts = line.split(',')
+                if len(parts) >= 2:
+                    domain = parts[1].strip()
+                    action = 'reject'
+                    if 'REJECT-NO-DROP' in line:
+                        action = 'reject-no-drop'
+                    return f'host, {domain}, {action}'
+
+            # 处理 Map Local 规则
+            if ('data-type=' in line or 'data=' in line):
+                pattern = r'^([^\s]+)'
+                match = re.search(pattern, line)
+                if match:
+                    url = match.group(1)
+                    return f'url reject-dict {url}'
+
+            # 处理脚本规则
+            if ('type=http-response' in line or 'type=http-request' in line) and 'script-path=' in line:
                 pattern = r'pattern=([^,]+).*script-path=([^,\s]+)'
                 match = re.search(pattern, line)
                 if match:
                     url, script = match.groups()
+                    requires_body = 'requires-body=true' in line
                     script_type = 'response' if 'http-response' in line else 'request'
-                    return f'url script-{script_type}-body {url.strip()} {script.strip()}'
+                    body_type = '-body' if requires_body else ''
+                    return f'url script-{script_type}{body_type} {url.strip()} {script.strip()}'
 
-            # 2. 处理 Map Local 规则
-            if ('data-type=' in line or 'data=' in line) and line.startswith('^http'):
-                url_pattern = r'^([^\s]+)'
-                match = re.search(url_pattern, line)
-                if match:
-                    return f'url reject-dict {match.group(1)}'
-
-            # 3. 处理域名规则
-            domain_types = ['DOMAIN', 'DOMAIN-SUFFIX', 'DOMAIN-KEYWORD']
-            for domain_type in domain_types:
-                if line.startswith(f'{domain_type},'):
-                    pattern = f'{domain_type},([^,]+),?([^,]*)'
-                    match = re.search(pattern, line)
-                    if match:
-                        domain, action = match.groups()
-                        action = action.strip() if action else 'reject'
-                        host_type = 'host' if domain_type == 'DOMAIN' else domain_type.lower().replace('domain-', 'host-')
-                        return f'{host_type}, {domain.strip()}, {action.lower()}'
-
-            # 4. 处理 URL 规则
+            # 处理 URL-REGEX 规则
             if 'URL-REGEX' in line or 'url-regex' in line:
                 pattern = r'URL-REGEX,([^,]+),?([^,]*)'
                 match = re.search(pattern, line, re.IGNORECASE)
@@ -116,7 +124,7 @@ class RuleProcessor:
                     action = action.strip() if action else 'reject'
                     return f'url reject-200 {url.strip()}'
 
-            # 5. 处理重定向规则
+            # 处理重定向规则
             if '302' in line or '307' in line:
                 pattern = r'([^\s]+)\s+30[27]\s+([^\s]+)'
                 match = re.search(pattern, line)
@@ -124,32 +132,17 @@ class RuleProcessor:
                     source, destination = match.groups()
                     return f'url 302 {source.strip()} {destination.strip()}'
 
-            # 6. 处理普通 reject 规则
+            # 处理普通 reject 规则
             if 'reject' in line.lower():
-                # 处理带逗号的格式
                 if ',' in line:
                     pattern = r'([^,]+),\s*reject'
                     match = re.search(pattern, line)
                     if match:
                         return f'url reject-200 {match.group(1).strip()}'
-                # 处理空格分隔的格式
                 else:
                     parts = line.split()
                     if len(parts) >= 2 and 'reject' in parts[1].lower():
                         return f'url reject-200 {parts[0]}'
-
-            # 7. 处理 AND 规则
-            if line.startswith('AND,'):
-                url_pattern = r'URL-REGEX,"([^"]+)"'
-                match = re.search(url_pattern, line)
-                if match:
-                    return f'url reject {match.group(1)}'
-
-            # 8. 处理其他 URL 规则
-            if '^http' in line or 'http' in line:
-                parts = line.split()
-                if len(parts) >= 2:
-                    return f'url {parts[1]} {parts[0]}'
 
         except Exception as e:
             print(f"Error converting rule: {line}")
@@ -157,39 +150,6 @@ class RuleProcessor:
             return None
 
         return line
-
-    def is_valid_rule(self, rule):
-        if not rule or rule.startswith('#'):
-            return False
-                
-        try:
-            parts = rule.split()
-            if len(parts) < 2:
-                return False
-                
-            valid_types = {
-                'url': ['reject', 'reject-200', 'reject-img', 'reject-dict', 'reject-array',
-                       'script-response-body', 'script-request-body',
-                       'script-response-header', 'script-request-header',
-                       'request-header', 'response-header', '302', '307'],
-                'host': ['reject'],
-                'host-suffix': ['reject'],
-                'host-keyword': ['reject']
-            }
-            
-            rule_type = parts[0]
-            if rule_type in valid_types:
-                if len(parts) < 3:
-                    return False
-                action = parts[1]
-                return any(action.startswith(valid_action) for valid_action in valid_types[rule_type])
-                    
-        except Exception as e:
-            print(f"Error validating rule: {rule}")
-            print(f"Error details: {str(e)}")
-            return False
-                        
-        return True
 
     def parse_rules(self, content):
         rules = set()
@@ -218,156 +178,63 @@ class RuleProcessor:
                     script_content = []
                 continue
 
-            # 处理 MITM 部分
-            if current_section == 'MITM' or 'hostname' in line.lower():
+            # 处理每个段落的规则
+            if current_section == 'RULE':
+                converted = self.convert_surge_to_quanx(line)
+                if converted and self.is_valid_rule(converted):
+                    rules.add(converted)
+            elif current_section == 'MAP LOCAL':
+                converted = self.convert_surge_to_quanx(line)
+                if converted and self.is_valid_rule(converted):
+                    rules.add(converted)
+            elif current_section == 'SCRIPT':
+                converted = self.convert_surge_to_quanx(line)
+                if converted and self.is_valid_rule(converted):
+                    rules.add(converted)
+            elif current_section == 'MITM':
                 if '%APPEND%' in line:
                     hosts = line.split('%APPEND%')[1].strip().split(',')
+                    hostnames.update(h.strip() for h in hosts if h.strip())
                 elif 'hostname' in line.lower() and '=' in line:
                     hosts = line.split('=')[1].strip().split(',')
-                else:
-                    hosts = line.strip().split(',')
-                
-                hostnames.update(h.strip() for h in hosts if h.strip() and not h.startswith('#'))
-                continue
+                    hostnames.update(h.strip() for h in hosts if h.strip())
 
-            # 处理脚本内容
-            if current_section == 'SCRIPT' or 'function' in line or 'var ' in line:
-                in_script = True
-                script_content.append(line)
-                continue
-            
-            if in_script:
-                script_content.append(line)
-                continue
-
-            # 处理规则部分
-            if current_section in ['RULE', 'URL REWRITE', 'MAP LOCAL', None]:
+            # 处理没有段落标记的规则
+            if current_section is None:
                 converted = self.convert_surge_to_quanx(line)
                 if converted and self.is_valid_rule(converted):
                     rules.add(converted)
 
-        # 添加最后的脚本内容
-        if script_content:
-            js_methods.add('\n'.join(script_content))
-
         return rules, hostnames, js_methods
 
-    def generate_output(self, rules, hostnames, js_methods):
-        header = f"""# 广告拦截重写规则合集
-# 更新时间：{self.get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-# 规则数量：{len(rules)}
-# Hostname数量：{len(hostnames)}
-# JavaScript方法数量：{len(js_methods)}
-
-"""
-        content = header
-        
-        if js_methods:
-            content += "# JavaScript Methods\n"
-            for js in js_methods:
-                content += f"{js}\n\n"
-        
-        content += "# Rewrite Rules\n"
-        content += '\n'.join(sorted(rules))
-        
-        if hostnames:
-            content += "\n\n# Hostname\n"
-            hostname_list = sorted(hostnames)
-            # 分组显示，每组最多50个hostname
-            GROUP_SIZE = 50
-            for i in range(0, len(hostname_list), GROUP_SIZE):
-                group = hostname_list[i:i + GROUP_SIZE]
-                content += f"hostname = {', '.join(group)}\n"
-        
-        return content
-
-    def merge_rules(self, sources):
-        all_rules = set()
-        all_hostnames = set()
-        all_js_methods = set()
-        
-        total_sources = len(sources)
-        current = 0
-        
-        for name, url in sources.items():
-            current += 1
-            print(f"\nProcessing {current}/{total_sources}: {name}")
-            content = self.download_rules(name, url)
-            if content:
-                try:
-                    rules, hostnames, js_methods = self.parse_rules(content)
-                    print(f"Found {len(rules)} rules, {len(hostnames)} hostnames, {len(js_methods)} scripts")
-                    all_rules.update(rules)
-                    all_hostnames.update(hostnames)
-                    all_js_methods.update(js_methods)
-                except Exception as e:
-                    print(f"Error processing {name}: {str(e)}")
-
-        return all_rules, all_hostnames, all_js_methods
-
-    def save_rules(self, content):
-        output_path = os.path.join(self.REPO_PATH, self.REWRITE_DIR, self.OUTPUT_FILE)
-        try:
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            print(f"Successfully saved rules to {output_path}")
-            return True
-        except Exception as e:
-            print(f"Error saving rules: {str(e)}")
+    def is_valid_rule(self, rule):
+        if not rule or rule.startswith('#'):
             return False
-
-    def update_readme(self, rule_count, hostname_count):
-        beijing_time = self.get_beijing_time()
-        content = f"""# 广告拦截重写规则合集
-
-## 更新时间
-{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-
-## 规则说明
-本重写规则集合并自各个开源规则，去除重复规则。
-- 当前规则数量：{rule_count}
-- 当前 Hostname 数量：{hostname_count}
-
-## 规则来源
-{chr(10).join([f'- {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
-
-## 使用方法
-规则文件地址: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/main/rewrite/ad_rewrite.conf
-"""
-        
-        readme_path = os.path.join(self.REPO_PATH, self.README_PATH)
+                
         try:
-            with open(readme_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            print(f"Successfully updated README at {readme_path}")
-            return True
+            parts = rule.split()
+            if len(parts) < 2:
+                return False
+                
+            valid_types = {
+                'url': ['reject', 'reject-200', 'reject-img', 'reject-dict', 'reject-array',
+                       'script-response-body', 'script-request-body',
+                       'script-response-header', 'script-request-header',
+                       'request-header', 'response-header', '302', '307'],
+                'host': ['reject', 'reject-no-drop'],
+                'host-suffix': ['reject'],
+                'host-keyword': ['reject']
+            }
+            
+            rule_type = parts[0]
+            if rule_type in valid_types:
+                action = parts[1]
+                return any(action.startswith(valid_action) for valid_action in valid_types[rule_type])
+                    
         except Exception as e:
-            print(f"Error updating README: {str(e)}")
+            print(f"Error validating rule: {rule}")
+            print(f"Error details: {str(e)}")
             return False
+                        
+        return True
 
-def git_push(repo_path):
-    try:
-        repo = git.Repo(repo_path)
-        repo.git.add(all=True)
-        beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
-        repo.index.commit(f"Update rewrite rules: {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
-        origin = repo.remote(name='origin')
-        origin.push()
-        print("Successfully pushed to repository")
-    except Exception as e:
-        print(f"Error pushing to repository: {str(e)}")
-
-def main():
-    processor = RuleProcessor()
-    rules, hostnames, js_methods = processor.merge_rules(REWRITE_SOURCES)
-    content = processor.generate_output(rules, hostnames, js_methods)
-    
-    if processor.save_rules(content):
-        print(f"Successfully processed {len(rules)} rules, {len(hostnames)} hostnames, and {len(js_methods)} JavaScript methods")
-        processor.update_readme(len(rules), len(hostnames))
-        git_push(processor.REPO_PATH)
-    else:
-        print("Failed to save rules")
-
-if __name__ == "__main__":
-    main()
