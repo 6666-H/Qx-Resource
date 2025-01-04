@@ -1,12 +1,13 @@
 # 广告拦截重写规则合集
 
 ## 更新时间
-2025-01-04 21:59:17 (北京时间)
+2025-01-04 22:09:26 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
-- 当前规则数量：3304
-- 当前 Hostname 数量：1414
+- 当前重写规则数量：3304
+- 当前脚本规则数量：163
+- 当前 Hostname 数量：1408
 
 ## 规则来源
 - whatshubs开屏屏蔽: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rewrite/adultraplus.conf
