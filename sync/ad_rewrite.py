@@ -155,13 +155,17 @@ class RuleProcessor:
         rules = set()
         hostnames = set()
         js_methods = set()
+        rule_types = set()  # 用于收集所有的规则类型
         
         if not content:
-            return rules, hostnames, js_methods
+            return rules, hostnames, js_methods, rule_types
 
         current_section = None
         in_script = False
         script_content = []
+        
+        # 使用正则匹配所有 [xxx] 格式的规则类型
+        section_pattern = r'^\[(.*?)\]'
         
         for line in content.splitlines():
             line = line.strip()
@@ -170,12 +174,15 @@ class RuleProcessor:
                 continue
 
             # 检测段落标记
-            if line.startswith('['):
-                current_section = line.strip('[]').upper()
-                in_script = False
-                if script_content:
-                    js_methods.add('\n'.join(script_content))
-                    script_content = []
+            section_match = re.match(section_pattern, line)
+            if section_match:
+                current_section = section_match.group(1).upper()
+                rule_types.add(current_section)  # 收集规则类型
+                if in_script:
+                    in_script = False
+                    if script_content:
+                        js_methods.add('\n'.join(script_content))
+                        script_content = []
                 continue
 
             # 处理 MITM 部分
@@ -201,145 +208,39 @@ class RuleProcessor:
                             hostnames.add(host)
                 continue
 
-            # 处理规则部分
-            if current_section in ['RULE', 'URL REWRITE', 'MAP LOCAL', None]:
-                converted = self.convert_surge_to_quanx(line)
-                if converted and self.is_valid_rule(converted):
-                    rules.add(converted)
-                    
-                    # 从规则中提取域名
-                    if 'url' in converted:
-                        try:
-                            url_pattern = re.search(r'https?://([^/]+)', converted)
-                            if url_pattern:
-                                domain = url_pattern.group(1)
-                                # 移除可能的端口号
-                                domain = domain.split(':')[0]
-                                if '.' in domain and not any(c in domain for c in [' ', '"', "'", '(', ')']):
-                                    hostnames.add(domain)
-                        except:
-                            pass
-
-            # 处理脚本部分
-            elif current_section == 'SCRIPT':
+            # 处理脚本内容
+            if current_section == 'SCRIPT':
                 if 'pattern=' in line or 'script-path=' in line:
                     converted = self.convert_surge_to_quanx(line)
                     if converted and self.is_valid_rule(converted):
                         rules.add(converted)
-                        
-                        # 从脚本规则中提取域名
-                        try:
-                            url_pattern = re.search(r'https?://([^/]+)', converted)
-                            if url_pattern:
-                                domain = url_pattern.group(1)
-                                domain = domain.split(':')[0]
-                                if '.' in domain and not any(c in domain for c in [' ', '"', "'", '(', ')']):
-                                    hostnames.add(domain)
-                        except:
-                            pass
                 else:
                     script_content.append(line)
+                continue
+
+            # 处理其他规则
+            converted = self.convert_surge_to_quanx(line)
+            if converted and self.is_valid_rule(converted):
+                rules.add(converted)
+                
+                # 从规则中提取域名
+                if 'url' in converted:
+                    try:
+                        url_pattern = re.search(r'https?://([^/]+)', converted)
+                        if url_pattern:
+                            domain = url_pattern.group(1)
+                            domain = domain.split(':')[0]
+                            if '.' in domain and not any(c in domain for c in [' ', '"', "'", '(', ')']):
+                                hostnames.add(domain)
+                    except:
+                        pass
 
         # 添加最后的脚本内容
         if script_content:
             js_methods.add('\n'.join(script_content))
 
-        return rules, hostnames, js_methods
-        
+        return rules, hostnames, js_methods, rule_types
+
     def is_valid_rule(self, rule):
         if not rule or rule.startswith('#'):
             return False
-                
-        try:
-            parts = rule.split()
-            if len(parts) < 2:
-                return False
-                
-            valid_types = {
-                'url': ['reject', 'reject-200', 'reject-img', 'reject-dict', 'reject-array',
-                       'script-response-body', 'script-request-body',
-                       'script-response-header', 'script-request-header',
-                       'request-header', 'response-header', '302', '307'],
-                'host': ['reject', 'reject-no-drop'],
-                'host-suffix': ['reject'],
-                'host-keyword': ['reject']
-            }
-            
-            rule_type = parts[0]
-            if rule_type in valid_types:
-                action = parts[1]
-                return any(action.startswith(valid_action) for valid_action in valid_types[rule_type])
-                    
-        except Exception as e:
-            print(f"Error validating rule: {rule}")
-            print(f"Error details: {str(e)}")
-            return False
-                        
-        return True
-
-    def generate_output(self, rules, hostnames, js_methods):
-        header = f"""# 广告拦截重写规则合集
-# 更新时间：{self.get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-# 规则数量：{len(rules)}
-# Hostname数量：{len(hostnames)}
-# JavaScript方法数量：{len(js_methods)}
-
-"""
-        content = header
-        
-        if js_methods:
-            content += "# JavaScript Methods\n"
-            for js in js_methods:
-                content += f"{js}\n\n"
-        
-        content += "# Rewrite Rules\n"
-        content += '\n'.join(sorted(rules))
-        
-        if hostnames:
-            content += "\n\n# Hostname\n"
-            # 所有hostname放在同一行
-            content += f"hostname = {', '.join(sorted(hostnames))}"
-        
-        return content
-
-    def update_readme(self):
-        beijing_time = self.get_beijing_time()
-        content = f"""# 去广告重写规则
-
-这个仓库的重写规则由程序自动维护。
-最后更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-
-## 规则来源
-
-"""
-        for name, url in REWRITE_SOURCES.items():
-            content += f"- {name}: [{url}]({url})\n"
-            
-        readme_path = os.path.join(self.REPO_PATH, self.README_PATH)
-        with open(readme_path, "w", encoding="utf-8") as f:
-            f.write(content)
-
-    def run(self):
-        all_rules = set()
-        all_hostnames = set()
-        all_js_methods = set()
-
-        for name, url in REWRITE_SOURCES.items():
-            content = self.download_rules(name, url)
-            if content:
-                rules, hostnames, js_methods = self.parse_rules(content)
-                all_rules.update(rules)
-                all_hostnames.update(hostnames)
-                all_js_methods.update(js_methods)
-
-        output = self.generate_output(all_rules, all_hostnames, all_js_methods)
-        output_path = os.path.join(self.REPO_PATH, self.REWRITE_DIR, self.OUTPUT_FILE)
-        
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(output)
-
-        self.update_readme()
-
-if __name__ == "__main__":
-    processor = RuleProcessor()
-    processor.run()
