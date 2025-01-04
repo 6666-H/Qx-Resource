@@ -1,24 +1,3 @@
-import os
-import requests
-import datetime
-from datetime import timedelta
-import git
-from pathlib import Path
-
-# 配置项
-REPO_PATH = "ad"
-REWRITE_DIR = "rewrite"
-OUTPUT_FILE = "ad_rewrite.conf"
-README_PATH = "README-rewrite.md"
-
-# 规则源列表
-REWRITE_SOURCES = {
-    "阻止常见的 HTTPDNS 服务器": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule",
-    "广告平台拦截器": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B9%BF%E5%91%8A%E5%B9%B3%E5%8F%B0%E6%8B%A6%E6%88%AA%E5%99%A8.sgmodule",
-    "whatshubs开屏屏蔽": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rewrite/adultraplus.conf",
-    # 省略其余规则...
-}
-
 def get_beijing_time():
     """获取北京时间"""
     utc_now = datetime.datetime.utcnow()
@@ -38,12 +17,14 @@ def download_and_merge_rules():
 # {chr(10).join([f'# {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
 
 """
-    
+
     # 用于存储去重后的规则
     unique_rules = set()
+    # 用于存储所有注释和其他配置
+    comments = []
     # 用于存储分类的规则
     classified_rules = {}
-    
+
     # 用于存储 mitm 主机名
     mitm_hostnames = set()
     # 用于存储其它脚本规则
@@ -56,6 +37,8 @@ def download_and_merge_rules():
             response.raise_for_status()
             content = response.text
 
+            comments.append(f"\n# ======== {name} ========")
+
             # 处理每一行
             current_tag = None
             for line in content.splitlines():
@@ -63,9 +46,13 @@ def download_and_merge_rules():
                 if not line:  # 跳过空行
                     continue
 
+                if line.startswith('#'):  # 保存注释行
+                    comments.append(line)
+                    continue
+
                 # 检查标签 [tag]，并记录当前标签
                 if line.startswith('[') and line.endswith(']'):
-                    current_tag = line[1:-1]
+                    current_tag = line[1:-1].upper()  # 转成大写
                     if current_tag not in classified_rules:
                         classified_rules[current_tag] = []
                     continue
@@ -91,23 +78,25 @@ def download_and_merge_rules():
 
     # 组合最终内容
     final_content = header
+    final_content += "\n".join(comments)
 
     # 合并 mitm 的 hostname
     if mitm_hostnames:
-        final_content += f"[mitm]\nhostname = {','.join(sorted(mitm_hostnames))}\n"
+        final_content += "\n\n# ======== [MITM] ========\n"
+        final_content += f"hostname = {','.join(sorted(mitm_hostnames))}\n"
 
     # 分类规则输出
     for tag, rules in classified_rules.items():
-        final_content += f"\n[{tag}]\n"
+        final_content += f"\n\n# ======== [{tag}] ========\n"
         final_content += '\n'.join(sorted(rules))
 
     # 去重后的规则
-    final_content += "\n[去重后的规则]\n"
+    final_content += "\n\n# ======== [去重后的规则] ========\n"
     final_content += '\n'.join(sorted(unique_rules))
 
     # 其它脚本规则
     if other_rules:
-        final_content += "\n[其它脚本]\n"
+        final_content += "\n\n# ======== [其它脚本] ========\n"
         final_content += '\n'.join(sorted(other_rules))
 
     # 写入合并后的文件
@@ -141,7 +130,7 @@ def update_readme(rule_count, hostname_count, script_count):
 ## 使用方法
 规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/rewrite/ad_rewrite.conf
 """
-    
+
     with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
         f.write(content)
 
