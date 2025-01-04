@@ -1,12 +1,13 @@
 # 广告拦截重写规则合集
 
 ## 更新时间
-2025-01-05 01:10:01 (北京时间)
+2025-01-05 01:12:37 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
-- 当前规则数量：3444
-- 当前 Hostname 数量：1437
+- 当前规则数量：3360
+- 当前 Hostname 数量：1420
+- 当前 脚本 数量：451
 
 ## 规则来源
 - 阻止常见的 HTTPDNS 服务器: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule
@@ -23,7 +24,6 @@
 - 整合广告拦截: https://raw.githubusercontent.com/weiyesing/QuantumultX/GenMuLu/ChongXieGuiZe/QuGuangGao/To%20advertise.conf
 - YouTube去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/Youtube%20%E5%8E%BB%E5%B9%BF%E5%91%8A%20(%E4%B8%8D%E5%8E%BB%E8%B4%B4%E7%89%87).official.sgmodule
 - YouTube双语翻译: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/YouTube%E7%BF%BB%E8%AF%91.beta.sgmodule
-- 可莉广告过滤器: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%8F%AF%E8%8E%89%E5%B9%BF%E5%91%8A%E8%BF%87%E6%BB%A4%E5%99%A8.sgmodule
 - 小红书去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
 - 微博去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%BE%AE%E5%8D%9A%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
 - 小黑盒去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E9%BB%91%E7%9B%92%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
