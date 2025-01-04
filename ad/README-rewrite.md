@@ -1,11 +1,11 @@
 # 广告拦截重写规则合集
 
 ## 更新时间
-2025-01-04 21:47:18 (北京时间)
+2025-01-04 21:50:57 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
-- 当前规则数量：785
+- 当前规则数量：3444
 - 当前 Hostname 数量：1437
 
 ## 规则来源
@@ -37,4 +37,4 @@
 - 1998解锁: https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js
 
 ## 使用方法
-规则文件地址: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/main/rewrite/ad_rewrite.conf
+规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/rewrite/ad_rewrite.conf
