@@ -59,7 +59,7 @@ def download_and_merge_rules():
 # {chr(10).join([f'# {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
 
 """
-    
+    
     # 用于存储去重后的规则
     unique_rules = set()
     # 用于存储所有分类规则
@@ -75,14 +75,14 @@ def download_and_merge_rules():
             response = requests.get(url, timeout=30)
             response.raise_for_status()
             content = response.text
-            
+            
             # 处理每一行
             current_tag = None
             for line in content.splitlines():
                 line = line.strip()
                 if not line:  # 跳过空行
                     continue
-                
+                
                 # 提取所有的 hostname
                 if 'hostname' in line.lower():
                     # 处理不同格式的 hostname 行
@@ -90,13 +90,13 @@ def download_and_merge_rules():
                         hosts = line.split('=')[1].strip()
                     else:
                         hosts = line.replace('hostname', '').strip()
-                    
+                    
                     if hosts:
                         # 分割并清理 hostname
                         host_list = hosts.split(',')
                         all_hostnames.update([h.strip() for h in host_list if h.strip()])
                     continue
-                
+                
                 # 检查标签 [tag]
                 if line.startswith('[') and line.endswith(']'):
                     current_tag = line[1:-1].upper()  # 转换为大写
@@ -112,7 +112,7 @@ def download_and_merge_rules():
 
                 if line.startswith('^'):  # 正常重写规则
                     unique_rules.add(line)
-                
+                
                 # 处理 JavaScript 脚本
                 if line.endswith('.js'):
                     other_rules.append(line)
@@ -122,13 +122,13 @@ def download_and_merge_rules():
 
     # 组合最终内容
     final_content = header
-    
+    
     # 先输出分类规则
     for tag, rules in classified_rules.items():
         if rules and tag.upper() != '[MITM]':  # 跳过 MITM 标签的规则
             final_content += f"\n{tag}\n"  # 直接输出带[]的标签
             final_content += '\n'.join(sorted(rules)) + '\n'
-    
+    
     # 输出合并后的所有 hostname
     if all_hostnames:
         final_content += "\n[MITM]\n"
@@ -138,7 +138,7 @@ def download_and_merge_rules():
     if unique_rules:
         final_content += "\n[REWRITE]\n"
         final_content += '\n'.join(sorted(unique_rules)) + '\n'
-    
+    
     # 其它脚本规则
     if other_rules:
         final_content += "\n[SCRIPT]\n"
@@ -148,7 +148,7 @@ def download_and_merge_rules():
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(final_content)
-    
+    
     rule_count = len(unique_rules)
     hostname_count = len(all_hostnames)
     script_count = len(other_rules)
@@ -175,7 +175,7 @@ def update_readme(rule_count, hostname_count, script_count):
 ## 使用方法
 规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/rewrite/ad_rewrite.conf
 """
-    
+    
     with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
         f.write(content)
 
