@@ -178,35 +178,74 @@ class RuleProcessor:
                     script_content = []
                 continue
 
-            # 处理每个段落的规则
-            if current_section == 'RULE':
-                converted = self.convert_surge_to_quanx(line)
-                if converted and self.is_valid_rule(converted):
-                    rules.add(converted)
-            elif current_section == 'MAP LOCAL':
-                converted = self.convert_surge_to_quanx(line)
-                if converted and self.is_valid_rule(converted):
-                    rules.add(converted)
-            elif current_section == 'SCRIPT':
-                converted = self.convert_surge_to_quanx(line)
-                if converted and self.is_valid_rule(converted):
-                    rules.add(converted)
-            elif current_section == 'MITM':
+            # 处理 MITM 部分
+            if current_section == 'MITM' or 'hostname' in line.lower():
+                # 处理 %APPEND% 格式
                 if '%APPEND%' in line:
                     hosts = line.split('%APPEND%')[1].strip().split(',')
-                    hostnames.update(h.strip() for h in hosts if h.strip())
+                # 处理 hostname = 格式
                 elif 'hostname' in line.lower() and '=' in line:
                     hosts = line.split('=')[1].strip().split(',')
-                    hostnames.update(h.strip() for h in hosts if h.strip())
+                # 处理直接的域名列表
+                else:
+                    hosts = line.split(',')
 
-            # 处理没有段落标记的规则
-            if current_section is None:
+                # 清理和验证每个hostname
+                for host in hosts:
+                    host = host.strip()
+                    if host and not host.startswith('#'):
+                        # 移除可能的前缀
+                        host = host.replace('*.', '')
+                        # 基本的域名格式验证
+                        if '.' in host and not any(c in host for c in [' ', '"', "'", '(', ')']):
+                            hostnames.add(host)
+                continue
+
+            # 处理规则部分
+            if current_section in ['RULE', 'URL REWRITE', 'MAP LOCAL', None]:
                 converted = self.convert_surge_to_quanx(line)
                 if converted and self.is_valid_rule(converted):
                     rules.add(converted)
+                    
+                    # 从规则中提取域名
+                    if 'url' in converted:
+                        try:
+                            url_pattern = re.search(r'https?://([^/]+)', converted)
+                            if url_pattern:
+                                domain = url_pattern.group(1)
+                                # 移除可能的端口号
+                                domain = domain.split(':')[0]
+                                if '.' in domain and not any(c in domain for c in [' ', '"', "'", '(', ')']):
+                                    hostnames.add(domain)
+                        except:
+                            pass
+
+            # 处理脚本部分
+            elif current_section == 'SCRIPT':
+                if 'pattern=' in line or 'script-path=' in line:
+                    converted = self.convert_surge_to_quanx(line)
+                    if converted and self.is_valid_rule(converted):
+                        rules.add(converted)
+                        
+                        # 从脚本规则中提取域名
+                        try:
+                            url_pattern = re.search(r'https?://([^/]+)', converted)
+                            if url_pattern:
+                                domain = url_pattern.group(1)
+                                domain = domain.split(':')[0]
+                                if '.' in domain and not any(c in domain for c in [' ', '"', "'", '(', ')']):
+                                    hostnames.add(domain)
+                        except:
+                            pass
+                else:
+                    script_content.append(line)
+
+        # 添加最后的脚本内容
+        if script_content:
+            js_methods.add('\n'.join(script_content))
 
         return rules, hostnames, js_methods
-
+        
     def is_valid_rule(self, rule):
         if not rule or rule.startswith('#'):
             return False
@@ -238,3 +277,69 @@ class RuleProcessor:
                         
         return True
 
+    def generate_output(self, rules, hostnames, js_methods):
+        header = f"""# 广告拦截重写规则合集
+# 更新时间：{self.get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+# 规则数量：{len(rules)}
+# Hostname数量：{len(hostnames)}
+# JavaScript方法数量：{len(js_methods)}
+
+"""
+        content = header
+        
+        if js_methods:
+            content += "# JavaScript Methods\n"
+            for js in js_methods:
+                content += f"{js}\n\n"
+        
+        content += "# Rewrite Rules\n"
+        content += '\n'.join(sorted(rules))
+        
+        if hostnames:
+            content += "\n\n# Hostname\n"
+            # 所有hostname放在同一行
+            content += f"hostname = {', '.join(sorted(hostnames))}"
+        
+        return content
+
+    def update_readme(self):
+        beijing_time = self.get_beijing_time()
+        content = f"""# 去广告重写规则
+
+这个仓库的重写规则由程序自动维护。
+最后更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+
+## 规则来源
+
+"""
+        for name, url in REWRITE_SOURCES.items():
+            content += f"- {name}: [{url}]({url})\n"
+            
+        readme_path = os.path.join(self.REPO_PATH, self.README_PATH)
+        with open(readme_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+    def run(self):
+        all_rules = set()
+        all_hostnames = set()
+        all_js_methods = set()
+
+        for name, url in REWRITE_SOURCES.items():
+            content = self.download_rules(name, url)
+            if content:
+                rules, hostnames, js_methods = self.parse_rules(content)
+                all_rules.update(rules)
+                all_hostnames.update(hostnames)
+                all_js_methods.update(js_methods)
+
+        output = self.generate_output(all_rules, all_hostnames, all_js_methods)
+        output_path = os.path.join(self.REPO_PATH, self.REWRITE_DIR, self.OUTPUT_FILE)
+        
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(output)
+
+        self.update_readme()
+
+if __name__ == "__main__":
+    processor = RuleProcessor()
+    processor.run()
