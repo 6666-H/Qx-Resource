@@ -50,6 +50,23 @@ def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, REWRITE_DIR)).mkdir(parents=True, exist_ok=True)
 
+def extract_hostnames(line):
+    """提取一行中的所有 hostname"""
+    if 'hostname' not in line.lower():
+        return set()
+    
+    # 处理带 %APPEND% 的情况
+    is_append = '%APPEND%' in line
+    # 移除 hostname = 和 %APPEND%
+    hosts = line.replace('hostname = ', '').replace('%APPEND%', '').strip()
+    # 分割并清理
+    hostname_set = set(h.strip() for h in hosts.split(',') if h.strip())
+    
+    if is_append:
+        # 如果是 APPEND，给每个 hostname 添加 %APPEND% 标记
+        return set(f"%APPEND% {h}" for h in hostname_set)
+    return hostname_set
+
 def download_and_merge_rules():
     """下载并合并重写规则"""
     beijing_time = get_beijing_time()
@@ -83,18 +100,9 @@ def download_and_merge_rules():
                 if not line:  # 跳过空行
                     continue
                 
-                # 提取所有的 hostname
+                # 提取 hostname
                 if 'hostname' in line.lower():
-                    # 处理不同格式的 hostname 行
-                    if '=' in line:
-                        hosts = line.split('=')[1].strip()
-                    else:
-                        hosts = line.replace('hostname', '').strip()
-                    
-                    if hosts:
-                        # 分割并清理 hostname
-                        host_list = hosts.split(',')
-                        all_hostnames.update([h.strip() for h in host_list if h.strip()])
+                    all_hostnames.update(extract_hostnames(line))
                     continue
                 
                 # 检查标签 [tag]
@@ -132,7 +140,29 @@ def download_and_merge_rules():
     # 输出合并后的所有 hostname
     if all_hostnames:
         final_content += "\n[MITM]\n"
-        final_content += f"hostname = {', '.join(sorted(all_hostnames))}\n"
+        
+        # 对 hostname 进行分组处理
+        simple_hosts = set()  # 普通 hostname
+        append_hosts = set()  # 带 %APPEND% 的 hostname
+        
+        for host in all_hostnames:
+            if host.startswith('%APPEND%'):
+                # 提取 %APPEND% 后面的实际 hostname
+                actual_hosts = host.replace('%APPEND%', '').strip()
+                append_hosts.update(h.strip() for h in actual_hosts.split(','))
+            else:
+                simple_hosts.update(h.strip() for h in host.split(','))
+        
+        # 输出普通 hostname
+        if simple_hosts:
+            final_content += f"hostname = {', '.join(sorted(simple_hosts))}\n"
+        
+        # 输出带 %APPEND% 的 hostname，每行最多 5 个域名
+        if append_hosts:
+            sorted_append_hosts = sorted(append_hosts)
+            for i in range(0, len(sorted_append_hosts), 5):
+                chunk = sorted_append_hosts[i:i+5]
+                final_content += f"hostname = %APPEND% {', '.join(chunk)}\n"
 
     # 去重后的规则
     if unique_rules:
