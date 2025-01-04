@@ -65,6 +65,10 @@ def download_and_merge_rules():
     comments = []
     # 用于存储 mitm 主机名
     hostnames = set()
+    # 用于存储脚本规则
+    scripts = []
+    # 用于存储模块信息
+    module_info = []
 
     for name, url in REWRITE_SOURCES.items():
         try:
@@ -75,22 +79,42 @@ def download_and_merge_rules():
 
             comments.append(f"\n# ======== {name} ========")
             
+            # 标记是否在 [Script] 部分
+            in_script_section = False
+            
             # 处理每一行
             for line in content.splitlines():
                 line = line.strip()
                 if not line:  # 跳过空行
                     continue
                     
+                # 处理模块信息
+                if line.startswith('#!'):
+                    module_info.append(line)
+                    continue
+
+                # 检查区段标记
+                if line == '[Script]':
+                    in_script_section = True
+                    continue
+                elif line == '[MITM]':
+                    in_script_section = False
+                    continue
+                    
                 if line.startswith('#'):  # 保存注释行
                     comments.append(line)
                     continue
                     
-                if line.startswith('hostname'):  # 提取 hostname
+                if 'hostname' in line.lower():  # 提取 hostname
+                    # 处理 %APPEND% 的情况
+                    line = line.replace('%APPEND%', '')
                     hosts = line.split('=')[1].strip().split(',')
                     hostnames.update([h.strip() for h in hosts if h.strip()])
                     continue
                     
-                if line.startswith('^'):  # 正常重写规则
+                if in_script_section:  # 保存脚本规则
+                    scripts.append(line)
+                elif line.startswith('^'):  # 正常重写规则
                     unique_rules.add(line)
 
         except Exception as e:
@@ -98,7 +122,17 @@ def download_and_merge_rules():
 
     # 组合最终内容
     final_content = header
+    
+    if module_info:
+        final_content += "\n# ======== 模块信息 ========\n"
+        final_content += '\n'.join(module_info)
+        
     final_content += "\n".join(comments)
+    
+    if scripts:
+        final_content += "\n\n# ======== 脚本规则 ========\n"
+        final_content += '\n'.join(scripts)
+        
     final_content += "\n\n# ======== 去重后的规则 ========\n"
     final_content += '\n'.join(sorted(unique_rules))
     
@@ -113,11 +147,12 @@ def download_and_merge_rules():
         f.write(final_content)
     
     rule_count = len(unique_rules)
+    script_count = len(scripts)
     hostname_count = len(hostnames)
-    print(f"Successfully merged {rule_count} unique rules and {hostname_count} hostnames to {OUTPUT_FILE}")
-    return rule_count, hostname_count
+    print(f"Successfully merged {rule_count} unique rules, {script_count} scripts and {hostname_count} hostnames to {OUTPUT_FILE}")
+    return rule_count, script_count, hostname_count
 
-def update_readme(rule_count, hostname_count):
+def update_readme(rule_count, script_count, hostname_count):
     """更新 README.md"""
     beijing_time = get_beijing_time()
     content = f"""# 广告拦截重写规则合集
@@ -127,7 +162,8 @@ def update_readme(rule_count, hostname_count):
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
-- 当前规则数量：{rule_count}
+- 当前重写规则数量：{rule_count}
+- 当前脚本规则数量：{script_count}
 - 当前 Hostname 数量：{hostname_count}
 
 ## 规则来源
@@ -155,8 +191,8 @@ def git_push():
 
 def main():
     setup_directory()
-    rule_count, hostname_count = download_and_merge_rules()
-    update_readme(rule_count, hostname_count)
+    rule_count, script_count, hostname_count = download_and_merge_rules()
+    update_readme(rule_count, script_count, hostname_count)
     git_push()
 
 if __name__ == "__main__":
