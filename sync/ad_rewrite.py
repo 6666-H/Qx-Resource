@@ -80,7 +80,7 @@ def download_and_merge_rules():
             current_tag = None
             for line in content.splitlines():
                 line = line.strip()
-                if not line:  # 跳过空行
+                if not line or line.startswith('#'):  # 跳过空行和注释行
                     continue
                 
                 # 提取 hostname
