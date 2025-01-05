@@ -56,7 +56,8 @@ def download_and_merge_rules():
         'HOST,': 'DOMAIN,',
         'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
         'IP-CIDR,': 'IP-CIDR,',
-        'IP6-CIDR,': 'IP6-CIDR,'
+        'IP6-CIDR,': 'IP6-CIDR,',
+        'IP6-CIDR,': 'IP-CIDR6,' 
     }
 
     for name, url in FILTER_SOURCES.items():
