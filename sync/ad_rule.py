@@ -87,7 +87,7 @@ def download_and_merge_rules():
                     line = line.replace(old, new)
                 
                 # 添加到去重集合
-                if any(line.startswith(prefix) for prefix in ['DOMAIN', 'IP-CIDR', 'IP6-CIDR', 'USER-AGENT']):
+                if any(line.startswith(prefix) for prefix in ['DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']):
                     unique_rules.add(line)
 
         except Exception as e:
