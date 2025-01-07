@@ -73,13 +73,7 @@ def download_and_merge_rules():
             for line in content.splitlines():
                 line = line.strip()
                 # 跳过空行
-                if not line:
-                    continue
-                
-                # 保存重要注释行，跳过域名标记注释
-                if line.startswith('#'):
-                    if not line.startswith('# [') and not line.endswith(']'):
-                        comments.append(line)
+                if not line or line.startswith('#'):
                     continue
                 
                 # 规则格式转换
