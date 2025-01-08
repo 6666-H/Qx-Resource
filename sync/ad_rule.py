@@ -4,6 +4,7 @@ import datetime
 from datetime import timedelta
 import git
 from pathlib import Path
+import re
 
 # 配置项
 REPO_PATH = "ad"
@@ -61,12 +62,26 @@ def standardize_rule(line):
         'IP6-CIDR,': 'IP-CIDR6,'
     }
     
+    line = line.strip()
     for old, new in replacements.items():
         line = line.replace(old, new)
     
+    # 处理 IP-CIDR 规则
+    if line.startswith('IP-CIDR,'):
+        match = re.match(r'IP-CIDR,([^,]+)', line)
+        if match:
+            ip_cidr = match.group(1)
+            # 提取 IP 和 CIDR
+            ip_parts = ip_cidr.split('/')
+            if len(ip_parts) >= 1:
+                ip = ip_parts[0]
+                # 如果没有 CIDR，添加 /32
+                cidr = ip_parts[1] if len(ip_parts) > 1 else "32"
+                return 'IP-CIDR', f"{ip}/{cidr}"
+    
     parts = line.split(',')
     if len(parts) >= 2:
-        return parts[0], parts[1].strip()  # 返回规则类型和域名/IP
+        return parts[0], parts[1].strip()
     return None, None
 
 def get_rule_priority(rule_type):
@@ -158,7 +173,11 @@ def download_and_merge_rules():
     # 整理规则到分组
     for domain, (rule_type, _) in rules_dict.items():
         if rule_type == "IP-CIDR":
-            rule = f"IP-CIDR,{domain}/32"
+            # 检查是否已经包含 CIDR
+            if '/' in domain:
+                rule = f"IP-CIDR,{domain}"
+            else:
+                rule = f"IP-CIDR,{domain}/32"
         else:
             rule = f"{rule_type},{domain}"
         
