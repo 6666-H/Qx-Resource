@@ -46,40 +46,50 @@ def is_ip_address(text):
     except ValueError:
         return False
 
-def clean_rule(line, replacements):
-    """清理规则，只保留域名/IP部分"""
+def standardize_rule(line):
+    """标准化规则格式"""
     if not line or line.startswith('#'):
-        return None
-        
+        return None, None
+    
+    # 规则格式转换映射
+    replacements = {
+        'HOST-SUFFIX,': 'DOMAIN-SUFFIX,',
+        'HOST,': 'DOMAIN,',
+        'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
+        'IP-CIDR,': 'IP-CIDR,',
+        'IP6-CIDR,': 'IP-CIDR6,',
+        'IP6-CIDR,': 'IP-CIDR6,'
+    }
+    
     for old, new in replacements.items():
         line = line.replace(old, new)
     
     parts = line.split(',')
     if len(parts) >= 2:
-        return parts[1].strip()
-    return None
+        return parts[0], parts[1].strip()  # 返回规则类型和域名/IP
+    return None, None
 
-def determine_rule_type(domain_or_ip):
-    """确定规则类型"""
-    if is_ip_address(domain_or_ip):
-        return f"IP-CIDR,{domain_or_ip}/32"
-    elif domain_or_ip.startswith('*'):
-        return f"DOMAIN-KEYWORD,{domain_or_ip.lstrip('*.')}"
-    elif domain_or_ip.startswith('.'):
-        return f"DOMAIN-SUFFIX,{domain_or_ip.lstrip('.')}"
-    else:
-        return f"DOMAIN,{domain_or_ip}"
+def get_rule_priority(rule_type):
+    """获取规则优先级"""
+    priorities = {
+        'DOMAIN-KEYWORD': 3,
+        'DOMAIN-SUFFIX': 2,
+        'DOMAIN': 1,
+        'IP-CIDR': 4,  # IP-CIDR 单独处理
+        'IP-CIDR6': 4
+    }
+    return priorities.get(rule_type, 0)
 
-def get_white_list(replacements):
+def get_white_list():
     """获取白名单规则"""
     try:
         response = requests.get(WHITE_LIST_URL, timeout=30)
         response.raise_for_status()
         white_list = set()
         for line in response.text.splitlines():
-            domain_or_ip = clean_rule(line.strip(), replacements)
-            if domain_or_ip:
-                white_list.add(domain_or_ip)
+            _, domain = standardize_rule(line.strip())
+            if domain:
+                white_list.add(domain)
         return white_list
     except Exception as e:
         print(f"Error downloading white list: {str(e)}")
@@ -95,22 +105,12 @@ def download_and_merge_rules():
 
 """
     
-    # 用于存储去重后的域名/IP
-    unique_domains = set()
+    # 存储规则的字典，键为域名/IP，值为元组(规则类型, 优先级)
+    rules_dict = {}
     comments = []
 
-    # 规则格式转换映射
-    replacements = {
-        'HOST-SUFFIX,': 'DOMAIN-SUFFIX,',
-        'HOST,': 'DOMAIN,',
-        'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
-        'IP-CIDR,': 'IP-CIDR,',
-        'IP6-CIDR,': 'IP-CIDR6,',
-        'IP6-CIDR,': 'IP-CIDR6,'
-    }
-
     # 获取白名单
-    white_list = get_white_list(replacements)
+    white_list = get_white_list()
     print(f"Loaded {len(white_list)} white list rules")
 
     # 下载和处理规则
@@ -124,54 +124,66 @@ def download_and_merge_rules():
             comments.append(f"\n# ======== {name} ========")
             
             for line in content.splitlines():
-                # 清理规则，只保留域名/IP部分
-                domain_or_ip = clean_rule(line.strip(), replacements)
-                if domain_or_ip and domain_or_ip not in white_list:
-                    unique_domains.add(domain_or_ip)
+                rule_type, domain = standardize_rule(line.strip())
+                if domain and domain not in white_list:
+                    # 处理 IP 地址
+                    if is_ip_address(domain):
+                        rules_dict[domain] = ("IP-CIDR", 4)
+                        continue
+
+                    # 获取新规则的优先级
+                    new_priority = get_rule_priority(rule_type)
+                    
+                    # 如果域名已存在，比较优先级
+                    if domain in rules_dict:
+                        current_type, current_priority = rules_dict[domain]
+                        if new_priority > current_priority:
+                            rules_dict[domain] = (rule_type, new_priority)
+                    else:
+                        rules_dict[domain] = (rule_type, new_priority)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
 
     # 按规则类型分组
     rule_groups = {
+        'DOMAIN-KEYWORD': [],
         'DOMAIN-SUFFIX': [],
         'DOMAIN': [],
-        'DOMAIN-KEYWORD': [],
         'IP-CIDR': [],
         'IP-CIDR6': [],
         'USER-AGENT': []
     }
 
-    # 处理每个唯一的域名/IP，确定其规则类型
-    final_rules = set()
-    for domain_or_ip in unique_domains:
-        rule = determine_rule_type(domain_or_ip)
-        final_rules.add(rule)
+    # 整理规则到分组
+    for domain, (rule_type, _) in rules_dict.items():
+        if rule_type == "IP-CIDR":
+            rule = f"IP-CIDR,{domain}/32"
+        else:
+            rule = f"{rule_type},{domain}"
         
-        # 分组规则
-        for prefix in rule_groups.keys():
-            if rule.startswith(prefix):
-                rule_groups[prefix].append(rule)
-                break
+        if rule_type in rule_groups:
+            rule_groups[rule_type].append(rule)
 
     # 组合最终内容
     final_content = header
     final_content += "\n".join(comments)
     final_content += "\n\n# ======== 去重后的规则 ========\n"
     
-    # 按组添加规则
-    for group_name, rules in rule_groups.items():
-        if rules:
+    # 按组添加规则（保持优先级顺序）
+    for group_name in ['DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']:
+        if rule_groups[group_name]:
             final_content += f"\n# {group_name}\n"
-            final_content += '\n'.join(sorted(rules))
+            final_content += '\n'.join(sorted(rule_groups[group_name]))
 
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, FILTER_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(final_content)
     
-    print(f"Successfully merged {len(final_rules)} unique rules to {OUTPUT_FILE}")
-    return len(final_rules)
+    total_rules = sum(len(rules) for rules in rule_groups.values())
+    print(f"Successfully merged {total_rules} unique rules to {OUTPUT_FILE}")
+    return total_rules
 
 def update_readme(rule_count):
     """更新 README.md"""
