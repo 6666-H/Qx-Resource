@@ -36,8 +36,11 @@ def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, FILTER_DIR)).mkdir(parents=True, exist_ok=True)
 
-def clean_rule(line, replacements):
-    """清理规则格式，去掉后缀"""
+def clean_rule(line, replacements, remove_prefix=False):
+    """
+    清理规则格式，去掉后缀
+    remove_prefix: 是否去掉规则类型前缀
+    """
     # 跳过空行和注释
     if not line or line.startswith('#'):
         return None
@@ -49,8 +52,12 @@ def clean_rule(line, replacements):
     # 分割规则
     parts = line.split(',')
     if len(parts) >= 2:
-        # 只保留规则类型和域名/IP部分
-        return f"{parts[0]},{parts[1]}"
+        if remove_prefix:
+            # 只返回域名/IP部分
+            return parts[1]
+        else:
+            # 返回规则类型和域名/IP部分
+            return f"{parts[0]},{parts[1]}"
     return None
 
 def get_white_list(replacements):
@@ -60,7 +67,8 @@ def get_white_list(replacements):
         response.raise_for_status()
         white_list = set()
         for line in response.text.splitlines():
-            cleaned_rule = clean_rule(line.strip(), replacements)
+            # 获取白名单规则时去掉前缀，只保留域名/IP部分
+            cleaned_rule = clean_rule(line.strip(), replacements, remove_prefix=True)
             if cleaned_rule:
                 white_list.add(cleaned_rule)
         return white_list
@@ -117,12 +125,15 @@ def download_and_merge_rules():
             for line in content.splitlines():
                 # 清理规则格式（去掉后缀）
                 cleaned_rule = clean_rule(line.strip(), replacements)
-                if cleaned_rule and cleaned_rule not in white_list:
-                    # 验证和分类规则
-                    for prefix in rule_groups.keys():
-                        if cleaned_rule.startswith(prefix):
-                            unique_rules.add(cleaned_rule)
-                            break
+                if cleaned_rule:
+                    # 获取规则的域名/IP部分
+                    rule_parts = cleaned_rule.split(',')
+                    if len(rule_parts) >= 2 and rule_parts[1] not in white_list:
+                        # 验证和分类规则
+                        for prefix in rule_groups.keys():
+                            if cleaned_rule.startswith(prefix):
+                                unique_rules.add(cleaned_rule)
+                                break
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
