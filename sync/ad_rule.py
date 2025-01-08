@@ -10,6 +10,7 @@ REPO_PATH = "ad"
 FILTER_DIR = "filter"
 OUTPUT_FILE = "ad_filter.list"
 README_PATH = "README-rule.md"
+WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/ad/filter/white_list.text"
 
 # 分流规则源列表
 FILTER_SOURCES = {
@@ -35,6 +36,38 @@ def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, FILTER_DIR)).mkdir(parents=True, exist_ok=True)
 
+def clean_rule(line, replacements):
+    """清理规则格式，去掉后缀"""
+    # 跳过空行和注释
+    if not line or line.startswith('#'):
+        return None
+        
+    # 处理规则格式转换
+    for old, new in replacements.items():
+        line = line.replace(old, new)
+    
+    # 分割规则
+    parts = line.split(',')
+    if len(parts) >= 2:
+        # 只保留规则类型和域名/IP部分
+        return f"{parts[0]},{parts[1]}"
+    return None
+
+def get_white_list(replacements):
+    """获取白名单规则"""
+    try:
+        response = requests.get(WHITE_LIST_URL, timeout=30)
+        response.raise_for_status()
+        white_list = set()
+        for line in response.text.splitlines():
+            cleaned_rule = clean_rule(line.strip(), replacements)
+            if cleaned_rule:
+                white_list.add(cleaned_rule)
+        return white_list
+    except Exception as e:
+        print(f"Error downloading white list: {str(e)}")
+        return set()
+
 def download_and_merge_rules():
     """下载并合并分流规则"""
     beijing_time = get_beijing_time()
@@ -45,9 +78,7 @@ def download_and_merge_rules():
 
 """
     
-    # 用于存储去重后的规则
     unique_rules = set()
-    # 用于存储所有注释
     comments = []
 
     # 规则格式转换映射
@@ -56,8 +87,22 @@ def download_and_merge_rules():
         'HOST,': 'DOMAIN,',
         'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
         'IP-CIDR,': 'IP-CIDR,',
-        'IP6-CIDR,': 'IP6-CIDR,',
-        'IP6-CIDR,': 'IP-CIDR6,' 
+        'IP6-CIDR,': 'IP-CIDR6,',
+        'IP6-CIDR,': 'IP-CIDR6,'
+    }
+
+    # 获取白名单
+    white_list = get_white_list(replacements)
+    print(f"Loaded {len(white_list)} white list rules")
+
+    # 按规则类型分组
+    rule_groups = {
+        'DOMAIN-SUFFIX': [],
+        'DOMAIN': [],
+        'DOMAIN-KEYWORD': [],
+        'IP-CIDR': [],
+        'IP-CIDR6': [],
+        'USER-AGENT': []
     }
 
     for name, url in FILTER_SOURCES.items():
@@ -69,29 +114,36 @@ def download_and_merge_rules():
 
             comments.append(f"\n# ======== {name} ========")
             
-            # 处理每一行
             for line in content.splitlines():
-                line = line.strip()
-                # 跳过空行
-                if not line or line.startswith('#'):
-                    continue
-                
-                # 规则格式转换
-                for old, new in replacements.items():
-                    line = line.replace(old, new)
-                
-                # 添加到去重集合
-                if any(line.startswith(prefix) for prefix in ['DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']):
-                    unique_rules.add(line)
+                # 清理规则格式（去掉后缀）
+                cleaned_rule = clean_rule(line.strip(), replacements)
+                if cleaned_rule and cleaned_rule not in white_list:
+                    # 验证和分类规则
+                    for prefix in rule_groups.keys():
+                        if cleaned_rule.startswith(prefix):
+                            unique_rules.add(cleaned_rule)
+                            break
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
+
+    # 对规则进行分组
+    for rule in unique_rules:
+        for prefix in rule_groups.keys():
+            if rule.startswith(prefix):
+                rule_groups[prefix].append(rule)
+                break
 
     # 组合最终内容
     final_content = header
     final_content += "\n".join(comments)
     final_content += "\n\n# ======== 去重后的规则 ========\n"
-    final_content += '\n'.join(sorted(unique_rules))
+    
+    # 按组添加规则
+    for group_name, rules in rule_groups.items():
+        if rules:
+            final_content += f"\n# {group_name}\n"
+            final_content += '\n'.join(sorted(rules))
 
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, FILTER_DIR, OUTPUT_FILE)
