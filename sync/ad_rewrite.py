@@ -1,9 +1,18 @@
 import os
+import re
 import requests
 import datetime
 from datetime import timedelta
 import git
 from pathlib import Path
+import logging
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # 配置项
 REPO_PATH = "ad"
@@ -40,6 +49,18 @@ REWRITE_SOURCES = {
     "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js"
 }
 
+def create_session():
+    """创建带重试机制的会话"""
+    session = requests.Session()
+    retries = requests.adapters.Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[500, 502, 503, 504]
+    )
+    session.mount('http://', requests.adapters.HTTPAdapter(max_retries=retries))
+    session.mount('https://', requests.adapters.HTTPAdapter(max_retries=retries))
+    return session
+
 def get_beijing_time():
     """获取北京时间"""
     utc_now = datetime.datetime.utcnow()
@@ -49,6 +70,72 @@ def get_beijing_time():
 def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, REWRITE_DIR)).mkdir(parents=True, exist_ok=True)
+
+def validate_rewrite_rule(rule):
+    """验证重写规则的格式"""
+    try:
+        if ' url ' not in rule:
+            return False
+            
+        pattern, action = rule.split(' url ', 1)
+        
+        # 检查基本格式
+        if not pattern.startswith('^'):
+            return False
+            
+        # 检查动作类型
+        valid_actions = ['reject', 'reject-200', 'reject-img', 'reject-dict', 'reject-array']
+        if action not in valid_actions and not action.startswith('script'):
+            return False
+            
+        return True
+    except:
+        return False
+
+def test_regex_pattern(pattern):
+    """测试正则表达式是否有效"""
+    try:
+        re.compile(pattern)
+        return True
+    except re.error:
+        return False
+
+def process_rewrite_rule(line):
+    """处理重写规则，确保正则表达式正确"""
+    try:
+        if not line.strip():
+            return None
+            
+        if ' url ' not in line:
+            return None
+            
+        pattern, action = line.split(' url ', 1)
+        
+        # 修复常见的正则表达式问题
+        if pattern.startswith('^'):
+            pattern = pattern.replace(r'[\w-.]+', r'[\w\-\.]+')
+            pattern = pattern.replace('.mp4', r'\.mp4')
+            pattern = pattern.replace('?', r'\?')
+            
+        # 验证正则表达式
+        test_pattern = pattern[1:] if pattern.startswith('^') else pattern
+        if not test_regex_pattern(test_pattern):
+            logger.warning(f"Invalid regex pattern: {pattern}")
+            return None
+            
+        return f"{pattern} url {action}"
+    except Exception as e:
+        logger.error(f"Error processing rule: {line}, Error: {str(e)}")
+        return None
+
+def filter_invalid_rules(rules):
+    """过滤无效的重写规则"""
+    valid_rules = set()
+    for rule in rules:
+        processed_rule = process_rewrite_rule(rule)
+        if processed_rule:
+            valid_rules.add(processed_rule)
+    return valid_rules
 
 def download_and_merge_rules():
     """下载并合并重写规则"""
@@ -60,88 +147,78 @@ def download_and_merge_rules():
 
 """
     
-    # 用于存储去重后的规则
     unique_rules = set()
-    # 用于存储所有分类规则
     classified_rules = {}
-    # 用于存储所有 hostname
     all_hostnames = set()
-    # 用于存储其它脚本规则
     other_rules = []
+    session = create_session()
 
     for name, url in REWRITE_SOURCES.items():
         try:
-            print(f"Downloading rules from {name}...")
-            response = requests.get(url, timeout=30)
+            logger.info(f"Downloading rules from {name}...")
+            response = session.get(url, timeout=30)
             response.raise_for_status()
             content = response.text
             
-            # 处理每一行
             current_tag = None
             for line in content.splitlines():
                 line = line.strip()
-                if not line or line.startswith('#'):  # 跳过空行和注释行
+                if not line or line.startswith('#'):
                     continue
                 
-                # 提取 hostname
                 if 'hostname' in line.lower():
-                    # 提取 hostname 后面的所有域名
                     if '=' in line:
                         hostnames = line.split('=')[1].strip()
-                        # 移除 %APPEND%
                         hostnames = hostnames.replace('%APPEND%', '').strip()
-                        # 分割并添加到集合
                         all_hostnames.update(h.strip() for h in hostnames.split(',') if h.strip())
                     continue
                 
-                # 检查标签 [tag]
                 if line.startswith('[') and line.endswith(']'):
-                    current_tag = line[1:-1].upper()  # 转换为大写
+                    current_tag = line[1:-1].upper()
                     tag_with_brackets = f'[{current_tag}]'
                     if tag_with_brackets not in classified_rules:
                         classified_rules[tag_with_brackets] = []
                     continue
 
-                if current_tag:  # 当前行属于某个标签
-                    if current_tag.upper() != 'MITM':  # 跳过 MITM 部分的规则
+                if current_tag:
+                    if current_tag.upper() != 'MITM':
                         classified_rules[f'[{current_tag}]'].append(line)
                     continue
 
-                if line.startswith('^'):  # 正常重写规则
-                    unique_rules.add(line)
+                if line.startswith('^'):
+                    processed_rule = process_rewrite_rule(line)
+                    if processed_rule:
+                        unique_rules.add(processed_rule)
                 
-                # 处理 JavaScript 脚本
-                if line.endswith('.js'):
+                elif line.endswith('.js'):
                     other_rules.append(line)
 
         except Exception as e:
-            print(f"Error downloading {name}: {str(e)}")
+            logger.error(f"Error downloading {name}: {str(e)}")
+
+    # Filter invalid rules
+    unique_rules = filter_invalid_rules(unique_rules)
 
     # 组合最终内容
     final_content = header
     
-    # 先输出分类规则
     for tag, rules in classified_rules.items():
-        if rules and tag.upper() != '[MITM]':  # 跳过 MITM 标签的规则
-            final_content += f"\n{tag}\n"  # 直接输出带[]的标签
+        if rules and tag.upper() != '[MITM]':
+            final_content += f"\n{tag}\n"
             final_content += '\n'.join(sorted(rules)) + '\n'
     
-    # 输出合并后的所有 hostname 到一行
     if all_hostnames:
         final_content += "\n[MITM]\n"
         final_content += f"hostname = {', '.join(sorted(all_hostnames))}\n"
 
-    # 去重后的规则
     if unique_rules:
         final_content += "\n[REWRITE]\n"
         final_content += '\n'.join(sorted(unique_rules)) + '\n'
     
-    # 其它脚本规则
     if other_rules:
         final_content += "\n[SCRIPT]\n"
         final_content += '\n'.join(sorted(other_rules)) + '\n'
 
-    # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(final_content)
@@ -149,7 +226,7 @@ def download_and_merge_rules():
     rule_count = len(unique_rules)
     hostname_count = len(all_hostnames)
     script_count = len(other_rules)
-    print(f"Successfully merged {rule_count} unique rules, {hostname_count} hostnames, and {script_count} scripts to {OUTPUT_FILE}")
+    logger.info(f"Successfully merged {rule_count} unique rules, {hostname_count} hostnames, and {script_count} scripts")
     return rule_count, hostname_count, script_count
 
 def update_readme(rule_count, hostname_count, script_count):
@@ -185,15 +262,19 @@ def git_push():
         repo.index.commit(f"Update rewrite rules: {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
         origin = repo.remote(name='origin')
         origin.push()
-        print("Successfully pushed to repository")
+        logger.info("Successfully pushed to repository")
     except Exception as e:
-        print(f"Error pushing to repository: {str(e)}")
+        logger.error(f"Error pushing to repository: {str(e)}")
 
 def main():
-    setup_directory()
-    rule_count, hostname_count, script_count = download_and_merge_rules()
-    update_readme(rule_count, hostname_count, script_count)
-    git_push()
+    """主函数"""
+    try:
+        setup_directory()
+        rule_count, hostname_count, script_count = download_and_merge_rules()
+        update_readme(rule_count, hostname_count, script_count)
+        git_push()
+    except Exception as e:
+        logger.error(f"Error in main function: {str(e)}")
 
 if __name__ == "__main__":
     main()
