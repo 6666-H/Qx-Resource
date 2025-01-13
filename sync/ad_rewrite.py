@@ -4,7 +4,6 @@ import datetime
 from datetime import timedelta
 import git
 from pathlib import Path
-import re
 
 # 配置项
 REPO_PATH = "ad"
@@ -18,8 +17,8 @@ REWRITE_SOURCES = {
     "广告平台拦截器": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B9%BF%E5%91%8A%E5%B9%B3%E5%8F%B0%E6%8B%A6%E6%88%AA%E5%99%A8.sgmodule",
     "whatshubs开屏屏蔽": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rewrite/adultraplus.conf",
     "whatshub微信屏蔽": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rewrite/wechatad.conf",
-    "whatshubAdBlock": "https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rewrite/AdBlock.conf",
-    "surge去广告": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rewrite/surge.config",
+    "whatshubAdBlock":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rewrite/AdBlock.conf",
+    "surge去广告":"https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%96%B0%E6%89%8B%E5%8F%8B%E5%A5%BD%E3%81%AE%E5%8E%BB%E5%B9%BF%E5%91%8A%E9%9B%86%E5%90%88.official.sgmodule",
     "chxm去广告": "https://raw.githubusercontent.com/chxm1023/Advertising/main/AppAd.conf",
     "墨鱼微信广告": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/Applet.conf",
     "墨鱼去开屏V2.0": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/StartUp.conf",
@@ -51,73 +50,79 @@ def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, REWRITE_DIR)).mkdir(parents=True, exist_ok=True)
 
-def parse_rule_type(line):
-    """判断规则类型"""
-    if not line or line.startswith('#'):
-        return None
-    
-    line = line.strip()
-    
-    if 'hostname' in line.lower():
-        return 'MITM'
-    elif line.startswith('AND,') or line.startswith('OR,') or line.startswith('NOT,') or line.startswith('DOMAIN,') or line.startswith('DOMAIN-SUFFIX,') or line.startswith('DOMAIN-KEYWORD,') or line.startswith('IP-CIDR,') or line.startswith('IP-CIDR6,') or line.startswith('URL-REGEX,'):
-        return 'RULE'
-    elif 'url script-' in line:
-        return 'SCRIPT'
-    elif 'url reject' in line or 'url 302' in line:
-        return 'URL REWRITE'
-    elif line.startswith('^'):
-        return 'REWRITE'
-    elif line.startswith('force-http-engine-hosts') or line.startswith('skip-proxy'):
-        return 'GENERAL'
-    else:
-        return 'RULE'
-
-def extract_hostnames(line):
-    """从 MITM 规则中提取 hostname"""
-    if 'hostname' in line.lower():
-        if '=' in line:
-            hostnames = line.split('=')[1].strip()
-            hostnames = hostnames.replace('%APPEND%', '').strip()
-            return [h.strip() for h in hostnames.split(',') if h.strip()]
-    return []
-
-def parse_rules(content):
-    """解析规则内容"""
-    sections = {
-        'GENERAL': set(),
-        'RULE': set(),
-        'URL REWRITE': set(),
-        'MITM': set(),
-        'REWRITE': set(),
-        'SCRIPT': set()
-    }
-    
+def process_final_content(content):
+    """对生成的最终内容进行去重处理"""
+    sections = {}
     current_section = None
+    section_content = []
     
-    for line in content.splitlines():
-        line = line.strip()
-        
-        # 跳过空行和注释
-        if not line or line.startswith('#'):
+    # 首先保留头部注释
+    header = []
+    lines = content.splitlines()
+    for line in lines:
+        if line.startswith('#'):
+            header.append(line)
+        else:
+            break
+            
+    # 分离各个部分
+    for line in lines:
+        if not line.strip():
+            continue
+        if line.startswith('#'):
             continue
             
-        # 检查是否是新节
         if line.startswith('[') and line.endswith(']'):
-            current_section = line[1:-1].upper()
-            continue
+            # 保存前一个部分
+            if current_section:
+                sections[current_section] = section_content
+            # 开始新的部分
+            current_section = line
+            section_content = []
+        else:
+            if current_section:
+                section_content.append(line)
+                
+    # 保存最后一个部分
+    if current_section and section_content:
+        sections[current_section] = section_content
+        
+    # 对 REWRITE 部分进行去重处理
+    if '[REWRITE]' in sections:
+        rewrite_rules = {}
+        for rule in sections['[REWRITE]']:
+            rule = rule.strip()
+            if not rule:
+                continue
             
-        # 确定规则类型
-        rule_type = parse_rule_type(line)
-        if rule_type:
-            sections[rule_type].add(line)
-
-    return sections
-
-def merge_rules(all_rules, new_rules):
-    """合并规则集合"""
-    for section, rules in new_rules.items():
-        all_rules[section].update(rules)
+            # 获取规则的匹配部分作为key
+            rule_key = rule.split(' ')[0] if ' ' in rule else rule
+            
+            if rule_key not in rewrite_rules:
+                rewrite_rules[rule_key] = rule
+            else:
+                # 比较优先级
+                existing_rule = rewrite_rules[rule_key]
+                # reject-200 > reject-dict > reject
+                if 'reject' in rule:
+                    if 'reject-200' in rule:
+                        rewrite_rules[rule_key] = rule
+                    elif 'reject-dict' in rule and 'reject-200' not in existing_rule:
+                        rewrite_rules[rule_key] = rule
+                    elif 'reject' in rule and not any(x in existing_rule for x in ['reject-200', 'reject-dict']):
+                        rewrite_rules[rule_key] = rule
+        
+        # 更新去重后的规则
+        sections['[REWRITE]'] = sorted(rewrite_rules.values())
+    
+    # 重新组合内容
+    final_content = '\n'.join(header) + '\n\n'
+    for section, lines in sections.items():
+        if lines:
+            final_content += f"{section}\n"
+            final_content += '\n'.join(lines) + '\n\n'
+    
+    return final_content
 
 def download_and_merge_rules():
     """下载并合并重写规则"""
@@ -129,17 +134,14 @@ def download_and_merge_rules():
 
 """
     
-    # 存储所有规则
-    all_rules = {
-        'GENERAL': set(),
-        'RULE': set(),
-        'URL REWRITE': set(),
-        'MITM': set(),
-        'REWRITE': set(),
-        'SCRIPT': set()
-    }
-    
+    # 用于存储去重后的规则
+    unique_rules = set()
+    # 用于存储所有分类规则
+    classified_rules = {}
+    # 用于存储所有 hostname
     all_hostnames = set()
+    # 用于存储其它脚本规则
+    other_rules = []
 
     for name, url in REWRITE_SOURCES.items():
         try:
@@ -148,41 +150,77 @@ def download_and_merge_rules():
             response.raise_for_status()
             content = response.text
             
-            # 解析规则
-            sections = parse_rules(content)
-            
-            # 处理 MITM hostname
-            for rule in sections['MITM']:
-                all_hostnames.update(extract_hostnames(rule))
-            
-            # 合并其他规则
-            merge_rules(all_rules, sections)
+            current_tag = None
+            for line in content.splitlines():
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                
+                # 提取 hostname
+                if 'hostname' in line.lower():
+                    if '=' in line:
+                        hostnames = line.split('=')[1].strip()
+                        hostnames = hostnames.replace('%APPEND%', '').strip()
+                        all_hostnames.update(h.strip() for h in hostnames.split(',') if h.strip())
+                    continue
+                
+                # 检查标签
+                if line.startswith('[') and line.endswith(']'):
+                    current_tag = line[1:-1].upper()
+                    tag_with_brackets = f'[{current_tag}]'
+                    if tag_with_brackets not in classified_rules:
+                        classified_rules[tag_with_brackets] = []
+                    continue
+
+                if current_tag:
+                    if current_tag.upper() != 'MITM':
+                        classified_rules[f'[{current_tag}]'].append(line)
+                    continue
+
+                if line.startswith('^'):
+                    unique_rules.add(line)
+                elif line.endswith('.js'):
+                    other_rules.append(line)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
 
-    # 生成最终内容
+    # 组合最终内容
     final_content = header
     
-    # 按节输出规则
-    for section, rules in all_rules.items():
-        if rules and section != 'MITM':
-            final_content += f"\n[{section}]\n"
-            final_content += '\n'.join(sorted(rules)) + '\n'
+    # 输出分类规则
+    for tag, rules in classified_rules.items():
+        if rules and tag.upper() != '[MITM]':
+            final_content += f"\n{tag}\n"
+            final_content += '\n'.join(rules) + '\n'
     
-    # 输出 MITM 配置
+    # 输出合并的 hostname
     if all_hostnames:
         final_content += "\n[MITM]\n"
         final_content += f"hostname = {', '.join(sorted(all_hostnames))}\n"
+
+    # 输出URL重写规则
+    if unique_rules:
+        final_content += "\n[REWRITE]\n"
+        final_content += '\n'.join(sorted(unique_rules)) + '\n'
+    
+    # 输出脚本规则
+    if other_rules:
+        final_content += "\n[SCRIPT]\n"
+        final_content += '\n'.join(sorted(set(other_rules))) + '\n'
+
+    # 对生成的内容进行去重处理
+    final_content = process_final_content(final_content)
 
     # 写入文件
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(final_content)
     
-    rule_count = sum(len(rules) for section, rules in all_rules.items() if section != 'MITM')
+    # 计算规则数量
+    rule_count = len([line for line in final_content.splitlines() if line.startswith('^')])
     hostname_count = len(all_hostnames)
-    script_count = len(all_rules['SCRIPT'])
+    script_count = len([line for line in final_content.splitlines() if line.endswith('.js')])
     
     print(f"Successfully merged {rule_count} unique rules, {hostname_count} hostnames, and {script_count} scripts to {OUTPUT_FILE}")
     return rule_count, hostname_count, script_count
