@@ -1,11 +1,11 @@
 # 广告拦截分流规则合集
 
 ## 更新时间
-2025-01-10 10:47:19 (北京时间)
+2025-01-13 10:50:09 (北京时间)
 
 ## 规则说明
 本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
-当前规则数量：207770
+当前规则数量：207854
 
 ## 规则来源
 - AD_ALL: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Ad_All.list
