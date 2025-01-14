@@ -60,7 +60,7 @@ def standardize_rule(line):
         'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
         'IP-CIDR,': 'IP-CIDR,',
         'IP6-CIDR,': 'IP-CIDR6,',
-        'IP6-CIDR,': 'IP-CIDR6,'
+        'IP6-CIDR,': 'IP-CIDR6,',
         'HOST-REGEX,': 'DOMAIN-REGEX,'  # 添加 REGEX 规则转换
     }
     
