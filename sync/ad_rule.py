@@ -61,6 +61,7 @@ def standardize_rule(line):
         'IP-CIDR,': 'IP-CIDR,',
         'IP6-CIDR,': 'IP-CIDR6,',
         'IP6-CIDR,': 'IP-CIDR6,'
+        'HOST-REGEX,': 'DOMAIN-REGEX,'  # 添加 REGEX 规则转换
     }
     
     line = line.strip()
@@ -88,11 +89,12 @@ def standardize_rule(line):
 def get_rule_priority(rule_type):
     """获取规则优先级"""
     priorities = {
-        'DOMAIN-KEYWORD': 3,
-        'DOMAIN-SUFFIX': 2,
-        'DOMAIN': 1,
-        'IP-CIDR': 4,  # IP-CIDR 单独处理
-        'IP-CIDR6': 4
+        'DOMAIN-REGEX': 1,    # 最高优先级
+        'DOMAIN-KEYWORD': 4,  # 调整其他优先级
+        'DOMAIN-SUFFIX': 3,
+        'DOMAIN': 2,
+        'IP-CIDR': 5,
+        'IP-CIDR6': 5
     }
     return priorities.get(rule_type, 0)
 
@@ -163,6 +165,7 @@ def download_and_merge_rules():
 
     # 按规则类型分组
     rule_groups = {
+        'DOMAIN-REGEX': [],   # 添加 REGEX 组
         'DOMAIN-KEYWORD': [],
         'DOMAIN-SUFFIX': [],
         'DOMAIN': [],
@@ -191,7 +194,7 @@ def download_and_merge_rules():
     final_content += "\n\n# ======== 去重后的规则 ========\n"
     
     # 按组添加规则（保持优先级顺序）
-    for group_name in ['DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']:
+    for group_name in ['DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']:
         if rule_groups[group_name]:
             final_content += f"\n# {group_name}\n"
             final_content += '\n'.join(sorted(rule_groups[group_name]))
