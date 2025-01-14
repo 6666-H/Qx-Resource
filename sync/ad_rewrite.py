@@ -18,13 +18,13 @@ REWRITE_SOURCES = {
     "whatshubs开屏屏蔽": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rewrite/adultraplus.conf",
     "whatshub微信屏蔽": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rewrite/wechatad.conf",
     "whatshubAdBlock":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rewrite/AdBlock.conf",
-    "surge去广告":"https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%96%B0%E6%89%8B%E5%8F%8B%E5%A5%BD%E3%81%AE%E5%8E%BB%E5%B9%BF%E5%91%8A%E9%9B%86%E5%90%88.official.sgmodule",
     "chxm去广告": "https://raw.githubusercontent.com/chxm1023/Advertising/main/AppAd.conf",
     "墨鱼微信广告": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/Applet.conf",
     "墨鱼去开屏V2.0": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/StartUp.conf",
     "广告拦截精简版": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.conf",
     "去广告重写": "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/chongxie.txt",
     "整合广告拦截": "https://raw.githubusercontent.com/weiyesing/QuantumultX/GenMuLu/ChongXieGuiZe/QuGuangGao/To%20advertise.conf",
+    "surge去广告":"https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%96%B0%E6%89%8B%E5%8F%8B%E5%A5%BD%E3%81%AE%E5%8E%BB%E5%B9%BF%E5%91%8A%E9%9B%86%E5%90%88.official.sgmodule",
     "YouTube去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/Youtube%20%E5%8E%BB%E5%B9%BF%E5%91%8A%20(%E4%B8%8D%E5%8E%BB%E8%B4%B4%E7%89%87).official.sgmodule",
     "YouTube双语翻译": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/YouTube%E7%BF%BB%E8%AF%91.beta.sgmodule",
     "小红书去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule",
@@ -49,80 +49,6 @@ def get_beijing_time():
 def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, REWRITE_DIR)).mkdir(parents=True, exist_ok=True)
-
-def process_final_content(content):
-    """对生成的最终内容进行去重处理"""
-    sections = {}
-    current_section = None
-    section_content = []
-    
-    # 首先保留头部注释
-    header = []
-    lines = content.splitlines()
-    for line in lines:
-        if line.startswith('#'):
-            header.append(line)
-        else:
-            break
-            
-    # 分离各个部分
-    for line in lines:
-        if not line.strip():
-            continue
-        if line.startswith('#'):
-            continue
-            
-        if line.startswith('[') and line.endswith(']'):
-            # 保存前一个部分
-            if current_section:
-                sections[current_section] = section_content
-            # 开始新的部分
-            current_section = line
-            section_content = []
-        else:
-            if current_section:
-                section_content.append(line)
-                
-    # 保存最后一个部分
-    if current_section and section_content:
-        sections[current_section] = section_content
-        
-    # 对 REWRITE 部分进行去重处理
-    if '[REWRITE]' in sections:
-        rewrite_rules = {}
-        for rule in sections['[REWRITE]']:
-            rule = rule.strip()
-            if not rule:
-                continue
-            
-            # 获取规则的匹配部分作为key
-            rule_key = rule.split(' ')[0] if ' ' in rule else rule
-            
-            if rule_key not in rewrite_rules:
-                rewrite_rules[rule_key] = rule
-            else:
-                # 比较优先级
-                existing_rule = rewrite_rules[rule_key]
-                # reject-200 > reject-dict > reject
-                if 'reject' in rule:
-                    if 'reject-200' in rule:
-                        rewrite_rules[rule_key] = rule
-                    elif 'reject-dict' in rule and 'reject-200' not in existing_rule:
-                        rewrite_rules[rule_key] = rule
-                    elif 'reject' in rule and not any(x in existing_rule for x in ['reject-200', 'reject-dict']):
-                        rewrite_rules[rule_key] = rule
-        
-        # 更新去重后的规则
-        sections['[REWRITE]'] = sorted(rewrite_rules.values())
-    
-    # 重新组合内容
-    final_content = '\n'.join(header) + '\n\n'
-    for section, lines in sections.items():
-        if lines:
-            final_content += f"{section}\n"
-            final_content += '\n'.join(lines) + '\n\n'
-    
-    return final_content
 
 def download_and_merge_rules():
     """下载并合并重写规则"""
@@ -150,36 +76,42 @@ def download_and_merge_rules():
             response.raise_for_status()
             content = response.text
             
+            # 处理每一行
             current_tag = None
             for line in content.splitlines():
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith('#'):  # 跳过空行和注释行
                     continue
                 
                 # 提取 hostname
                 if 'hostname' in line.lower():
+                    # 提取 hostname 后面的所有域名
                     if '=' in line:
                         hostnames = line.split('=')[1].strip()
+                        # 移除 %APPEND%
                         hostnames = hostnames.replace('%APPEND%', '').strip()
+                        # 分割并添加到集合
                         all_hostnames.update(h.strip() for h in hostnames.split(',') if h.strip())
                     continue
                 
-                # 检查标签
+                # 检查标签 [tag]
                 if line.startswith('[') and line.endswith(']'):
-                    current_tag = line[1:-1].upper()
+                    current_tag = line[1:-1].upper()  # 转换为大写
                     tag_with_brackets = f'[{current_tag}]'
                     if tag_with_brackets not in classified_rules:
                         classified_rules[tag_with_brackets] = []
                     continue
 
-                if current_tag:
-                    if current_tag.upper() != 'MITM':
+                if current_tag:  # 当前行属于某个标签
+                    if current_tag.upper() != 'MITM':  # 跳过 MITM 部分的规则
                         classified_rules[f'[{current_tag}]'].append(line)
                     continue
 
-                if line.startswith('^'):
+                if line.startswith('^'):  # 正常重写规则
                     unique_rules.add(line)
-                elif line.endswith('.js'):
+                
+                # 处理 JavaScript 脚本
+                if line.endswith('.js'):
                     other_rules.append(line)
 
         except Exception as e:
@@ -188,40 +120,35 @@ def download_and_merge_rules():
     # 组合最终内容
     final_content = header
     
-    # 输出分类规则
+    # 先输出分类规则
     for tag, rules in classified_rules.items():
-        if rules and tag.upper() != '[MITM]':
-            final_content += f"\n{tag}\n"
-            final_content += '\n'.join(rules) + '\n'
+        if rules and tag.upper() != '[MITM]':  # 跳过 MITM 标签的规则
+            final_content += f"\n{tag}\n"  # 直接输出带[]的标签
+            final_content += '\n'.join(sorted(rules)) + '\n'
     
-    # 输出合并的 hostname
+    # 输出合并后的所有 hostname 到一行
     if all_hostnames:
         final_content += "\n[MITM]\n"
         final_content += f"hostname = {', '.join(sorted(all_hostnames))}\n"
 
-    # 输出URL重写规则
+    # 去重后的规则
     if unique_rules:
         final_content += "\n[REWRITE]\n"
         final_content += '\n'.join(sorted(unique_rules)) + '\n'
     
-    # 输出脚本规则
+    # 其它脚本规则
     if other_rules:
         final_content += "\n[SCRIPT]\n"
-        final_content += '\n'.join(sorted(set(other_rules))) + '\n'
+        final_content += '\n'.join(sorted(other_rules)) + '\n'
 
-    # 对生成的内容进行去重处理
-    final_content = process_final_content(final_content)
-
-    # 写入文件
+    # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(final_content)
     
-    # 计算规则数量
-    rule_count = len([line for line in final_content.splitlines() if line.startswith('^')])
+    rule_count = len(unique_rules)
     hostname_count = len(all_hostnames)
-    script_count = len([line for line in final_content.splitlines() if line.endswith('.js')])
-    
+    script_count = len(other_rules)
     print(f"Successfully merged {rule_count} unique rules, {hostname_count} hostnames, and {script_count} scripts to {OUTPUT_FILE}")
     return rule_count, hostname_count, script_count
 
