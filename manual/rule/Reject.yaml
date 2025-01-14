@@ -1,6 +1,6 @@
 #规则名称:Reject
 #规则统计:6696
-DOMAIN-REGEX,^ad\..*|^ads\..*
+#DOMAIN-REGEX,^ad\..*|^ads\..*
 DOMAIN,118.89.204.198
 DOMAIN,a.wkanx.com
 DOMAIN,a0.app.xiaomi.com
