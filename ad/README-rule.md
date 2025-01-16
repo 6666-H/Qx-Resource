@@ -1,11 +1,11 @@
 # 广告拦截分流规则合集
 
 ## 更新时间
-2025-01-14 16:01:22 (北京时间)
+2025-01-16 10:38:41 (北京时间)
 
 ## 规则说明
 本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
-当前规则数量：207930
+当前规则数量：208764
 
 ## 规则来源
 - Reect_yaml: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Reject.yaml
