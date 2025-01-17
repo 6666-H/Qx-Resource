@@ -15,6 +15,7 @@ WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/
 
 # 分流规则源列表
 FILTER_SOURCES = {
+    "AntiAD":"https://whatshub.top/rule/AntiAD.list",
     "Reect_yaml":"https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Reject.yaml",
     "AD_ALL": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Ad_All.list",
     "Ads_ml": "https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list",
