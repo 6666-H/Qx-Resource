@@ -1,14 +1,14 @@
 # 广告拦截分流规则合集
 
 ## 更新时间
-2025-01-17 11:00:05 (北京时间)
+2025-01-19 10:43:20 (北京时间)
 
 ## 规则说明
 本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
-当前规则数量：208800
+当前规则数量：209000
 
 ## 规则来源
-- AntiAD: https://whatshub.top/rule/AntiAD.list
+- AntiAD: https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/AntiAD.list
 - Reect_yaml: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Reject.yaml
 - AD_ALL: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Ad_All.list
 - Ads_ml: https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list
