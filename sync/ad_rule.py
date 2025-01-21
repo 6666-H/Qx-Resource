@@ -15,6 +15,7 @@ WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/
 
 # 分流规则源列表
 # FILTER_SOURCES = {
+#     "Hijacking":"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Hijacking/Hijacking.list",
 #     "AntiAD":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/AntiAD.list",
 #     "Advertising": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Advertising/Advertising.list",
 #     "Reect_yaml":"https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Reject.yaml",
@@ -26,6 +27,7 @@ WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/
 #     "SKK_IP_Reject": "https://ruleset.skk.moe/List/ip/reject.conf"
 # }
 FILTER_SOURCES = {
+    "Hijacking":"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Hijacking/Hijacking.list",
     "AntiAD":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/AntiAD.list",
     "Advertising": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Advertising/Advertising.list"
 }
