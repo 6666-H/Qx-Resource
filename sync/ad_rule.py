@@ -14,16 +14,20 @@ README_PATH = "README-rule.md"
 WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/ad/filter/white_list.text"
 
 # 分流规则源列表
+# FILTER_SOURCES = {
+#     "AntiAD":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/AntiAD.list",
+#     "Advertising": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Advertising/Advertising.list",
+#     "Reect_yaml":"https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Reject.yaml",
+#     "Ads_ml": "https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list",
+#     "Reject_Rule": "https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Reject_Rule/Reject_Rule.rule",
+#     "Reject": "https://raw.githubusercontent.com/Irrucky/Tool/main/Surge/rules/Reject.list",
+#     "SKK_Reject": "https://ruleset.skk.moe/List/non_ip/reject.conf",
+#     "Dler_AdBlock": "https://raw.githubusercontent.com/dler-io/Rules/refs/heads/main/Surge/Surge%203/Provider/AdBlock.list",
+#     "SKK_IP_Reject": "https://ruleset.skk.moe/List/ip/reject.conf"
+# }
 FILTER_SOURCES = {
     "AntiAD":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/AntiAD.list",
-    "Advertising": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Advertising/Advertising.list",
-    "Reect_yaml":"https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Reject.yaml",
-    "Ads_ml": "https://github.com/thNylHx/Tools/raw/main/Ruleset/Surge/Block/Ads_ml.list",
-    "Reject_Rule": "https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Reject_Rule/Reject_Rule.rule",
-    "Reject": "https://raw.githubusercontent.com/Irrucky/Tool/main/Surge/rules/Reject.list",
-    "SKK_Reject": "https://ruleset.skk.moe/List/non_ip/reject.conf",
-    "Dler_AdBlock": "https://raw.githubusercontent.com/dler-io/Rules/refs/heads/main/Surge/Surge%203/Provider/AdBlock.list",
-    "SKK_IP_Reject": "https://ruleset.skk.moe/List/ip/reject.conf"
+    "Advertising": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Advertising/Advertising.list"
 }
 
 def get_beijing_time():
