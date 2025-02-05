@@ -1,15 +1,15 @@
 # 广告拦截分流规则合集
 
 ## 更新时间
-2025-02-05 17:12:33 (北京时间)
+2025-02-05 17:17:37 (北京时间)
 
 ## 规则说明
 本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
-当前规则数量：39053
+当前规则数量：164697
 
 ## 规则来源
-- AntiAD: https://raw.githubusercontent.com/deezertidal/shadowrocket-rules/refs/heads/main/rule/ADLite.list
-- AdvertisingLite: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.list
+- AntiAD: https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/AntiAD.list
+- Advertising: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Advertising/Advertising.list
 - Ad: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rule/Ad.list
 
 ## 使用方法
