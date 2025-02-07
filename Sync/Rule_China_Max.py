@@ -10,7 +10,7 @@ import re
 REPO_PATH = "Rule"
 FILTER_DIR = "Direct"
 OUTPUT_FILE = "China_Max.list"
-README_PATH = "README-rule.md"
+README_PATH = "README_China_Max.md"
 
 FILTER_SOURCES = {
     "China":"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/China/China.list",
