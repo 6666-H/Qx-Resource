@@ -10,7 +10,7 @@ import re
 REPO_PATH = "Rule"
 FILTER_DIR = "Advertising"
 OUTPUT_FILE = "Ad_Lite.list"
-README_PATH = "README-Ad_Lite.md"
+README_PATH = "README_Ad_Lite.md"
 WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Ad_White_list.list"
 
 # 分流规则源列表
