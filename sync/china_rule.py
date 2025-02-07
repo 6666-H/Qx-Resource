@@ -7,9 +7,9 @@ from pathlib import Path
 import re
 
 # 配置项
-REPO_PATH = "ad"
+REPO_PATH = "direct"
 FILTER_DIR = "filter"
-OUTPUT_FILE = "Ad.list"
+OUTPUT_FILE = "china_rule.list"
 README_PATH = "README-rule.md"
 
 FILTER_SOURCES = {
