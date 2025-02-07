@@ -24,7 +24,7 @@ jobs:
           pip install requests GitPython
           
       - name: Run update script
-        run: python Sync/ad_rewrite.py
+        run: python Sync/Rewrite_Ad.py
         
       - name: Configure Git
         run: |
