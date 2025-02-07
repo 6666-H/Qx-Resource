@@ -1,4 +1,4 @@
-name: Update Ad Lite Rules
+name: Update Rules_Ad_Lite 
 
 on:
   schedule:
