@@ -1,4 +1,4 @@
-name: Update Ad Rewrite
+name: Update Rewrite_Ad
 
 on:
   schedule:
