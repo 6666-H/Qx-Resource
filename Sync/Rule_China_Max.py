@@ -59,7 +59,8 @@ def standardize_rule(line):
         'IP-CIDR,': 'IP-CIDR,',
         'IP6-CIDR,': 'IP6-CIDR,',
         'HOST-REGEX,': 'DOMAIN-REGEX,',
-        'USER-AGENT,': 'USER-AGENT,'
+        'USER-AGENT,': 'USER-AGENT,',
+        'GEOIP,':'GEOIP,'
     }
     
     line = line.strip()
@@ -132,6 +133,7 @@ def download_and_merge_rules():
 
     # 规则分组
     rule_groups = {
+        'GEOIP':[],
         'DOMAIN-REGEX': [],
         'DOMAIN': [],
         'DOMAIN-SUFFIX': [],
