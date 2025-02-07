@@ -6,9 +6,9 @@ import git
 from pathlib import Path
 
 # 配置项
-REPO_PATH = "ad"
-REWRITE_DIR = "rewrite"
-OUTPUT_FILE = "ad_rewrite.conf"
+REPO_PATH = "Rewrite"
+REWRITE_DIR = "Advertising"
+OUTPUT_FILE = "Ad.conf"
 README_PATH = "README-rewrite.md"
 
 # 规则源列表
