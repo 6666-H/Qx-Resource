@@ -9,7 +9,7 @@ from pathlib import Path
 REPO_PATH = "Rewrite"
 REWRITE_DIR = "Advertising"
 OUTPUT_FILE = "Ad.conf"
-README_PATH = "README-rewrite.md"
+README_PATH = "README-Rewrite.md"
 
 # 规则源列表
 # REWRITE_SOURCES = {
