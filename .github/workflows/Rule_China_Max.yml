@@ -1,0 +1,37 @@
+name: Update Rules_China_Max
+
+on:
+  schedule:
+    - cron: '0 2 */3 * *'  # 每3天凌晨 2 点运行
+  workflow_dispatch:      # 允许手动触发
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests GitPython
+          
+      - name: Run update script
+        run: python Sync/Rule_China_Max.py
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+      - name: Commit and push if changed
+        run: |
+          git add -A
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update filter rules: $(date +'%Y-%m-%d %H:%M:%S')"
+          git push
