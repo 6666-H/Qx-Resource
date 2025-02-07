@@ -13,13 +13,10 @@ OUTPUT_FILE = "China_Max.list"
 README_PATH = "README_China_Max.md"
 
 FILTER_SOURCES = {
-    "China":"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/China/China.list",
+    "China": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/China/China.list",
     "ChinaIPs": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/QuantumultX/ChinaIPs/ChinaIPs.list",
     "ChinaMax": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/ChinaMax/ChinaMax.list",
-    "ChinaMaxNoIP":"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/ChinaMaxNoIP/ChinaMaxNoIP.list",
-    "ChinaIPs":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/ChinaIPs.list",
-    "ChinaMax":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/ChinaMax.list",
-    "ChinaMaxNoIP":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/ChinaMaxNoIP.list"
+    "ChinaMaxNoIP": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/ChinaMaxNoIP/ChinaMaxNoIP.list",
 }
 
 def get_beijing_time():
@@ -32,61 +29,67 @@ def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, FILTER_DIR)).mkdir(parents=True, exist_ok=True)
 
-def is_ip_address(text):
-    """判断是否为 IP 地址"""
-    parts = text.split('.')
-    if len(parts) != 4:
-        return False
+def is_ipv4(text):
+    """判断是否为 IPv4 地址"""
     try:
-        return all(0 <= int(part) <= 255 for part in parts)
-    except ValueError:
+        parts = text.split('.')
+        return len(parts) == 4 and all(0 <= int(part) <= 255 for part in parts)
+    except (ValueError, AttributeError):
+        return False
+
+def is_ipv6(text):
+    """判断是否为 IPv6 地址"""
+    try:
+        parts = text.split(':')
+        return len(parts) <= 8 and all(len(part) <= 4 and all(c in '0123456789abcdefABCDEF' for c in part) for part in parts if part)
+    except (ValueError, AttributeError):
         return False
 
 def standardize_rule(line):
     """标准化规则格式"""
     if not line or line.startswith('#'):
-        return None, None
-    
+        return None, None, None
+
     # 规则格式转换映射
     replacements = {
         'HOST-SUFFIX,': 'DOMAIN-SUFFIX,',
         'HOST,': 'DOMAIN,',
         'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
         'IP-CIDR,': 'IP-CIDR,',
-        'IP6-CIDR,': 'IP-CIDR6,',
-        'IP6-CIDR,': 'IP-CIDR6,',
-        'HOST-REGEX,': 'DOMAIN-REGEX,'
+        'IP6-CIDR,': 'IP6-CIDR,',
+        'HOST-REGEX,': 'DOMAIN-REGEX,',
+        'USER-AGENT,': 'USER-AGENT,'
     }
     
     line = line.strip()
     for old, new in replacements.items():
         line = line.replace(old, new)
     
-    # 处理 IP-CIDR 规则
-    if line.startswith('IP-CIDR,'):
-        match = re.match(r'IP-CIDR,([^,]+)', line)
-        if match:
-            ip_cidr = match.group(1)
-            ip_parts = ip_cidr.split('/')
-            if len(ip_parts) >= 1:
-                ip = ip_parts[0]
-                cidr = ip_parts[1] if len(ip_parts) > 1 else "32"
-                return 'IP-CIDR', f"{ip}/{cidr}"
-    
     parts = line.split(',')
-    if len(parts) >= 2:
-        return parts[0], parts[1].strip()
-    return None, None
+    if len(parts) < 2:
+        return None, None, None
+
+    rule_type = parts[0]
+    content = parts[1]
+    options = parts[2] if len(parts) > 2 else None
+
+    # 处理 IP-CIDR 规则
+    if rule_type in ['IP-CIDR', 'IP6-CIDR']:
+        if '/' not in content:
+            content = f"{content}/{'32' if rule_type == 'IP-CIDR' else '128'}"
+
+    return rule_type, content, options
 
 def get_rule_priority(rule_type):
     """获取规则优先级"""
     priorities = {
         'DOMAIN-REGEX': 1,
-        'DOMAIN-KEYWORD': 4,
-        'DOMAIN-SUFFIX': 3,
         'DOMAIN': 2,
+        'DOMAIN-SUFFIX': 3,
+        'DOMAIN-KEYWORD': 4,
         'IP-CIDR': 5,
-        'IP-CIDR6': 5
+        'IP6-CIDR': 5,
+        'USER-AGENT': 6
     }
     return priorities.get(rule_type, 0)
 
@@ -100,76 +103,61 @@ def download_and_merge_rules():
 
 """
     
-    # 存储规则的字典，键为域名/IP，值为元组(规则类型, 优先级)
+    # 存储规则的字典，键为内容，值为元组(规则类型, 选项, 优先级)
     rules_dict = {}
-    comments = []
-
+    
     # 下载和处理规则
     for name, url in FILTER_SOURCES.items():
         try:
             print(f"Downloading rules from {name}...")
             response = requests.get(url, timeout=30)
             response.raise_for_status()
-            content = response.text
-
-            comments.append(f"\n# ======== {name} ========")
             
-            for line in content.splitlines():
-                rule_type, domain = standardize_rule(line.strip())
-                if domain:
-                    # 处理 IP 地址
-                    if is_ip_address(domain):
-                        rules_dict[domain] = ("IP-CIDR", 4)
-                        continue
-
-                    # 获取新规则的优先级
+            for line in response.text.splitlines():
+                rule_type, content, options = standardize_rule(line.strip())
+                if content:
                     new_priority = get_rule_priority(rule_type)
                     
-                    # 如果域名已存在，比较优先级
-                    if domain in rules_dict:
-                        current_type, current_priority = rules_dict[domain]
+                    # 如果规则已存在，比较优先级
+                    if content in rules_dict:
+                        current_type, current_options, current_priority = rules_dict[content]
                         if new_priority > current_priority:
-                            rules_dict[domain] = (rule_type, new_priority)
+                            rules_dict[content] = (rule_type, options, new_priority)
                     else:
-                        rules_dict[domain] = (rule_type, new_priority)
+                        rules_dict[content] = (rule_type, options, new_priority)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
 
-    # 按规则类型分组
+    # 规则分组
     rule_groups = {
         'DOMAIN-REGEX': [],
-        'DOMAIN-KEYWORD': [],
-        'DOMAIN-SUFFIX': [],
         'DOMAIN': [],
+        'DOMAIN-SUFFIX': [],
+        'DOMAIN-KEYWORD': [],
         'IP-CIDR': [],
-        'IP-CIDR6': [],
+        'IP6-CIDR': [],
         'USER-AGENT': []
     }
 
     # 整理规则到分组
-    for domain, (rule_type, _) in rules_dict.items():
-        if rule_type == "IP-CIDR":
-            if '/' in domain:
-                rule = f"IP-CIDR,{domain}"
-            else:
-                rule = f"IP-CIDR,{domain}/32"
-        else:
-            rule = f"{rule_type},{domain}"
+    for content, (rule_type, options, _) in rules_dict.items():
+        rule = f"{rule_type},{content}"
+        if options:
+            rule += f",{options}"
         
         if rule_type in rule_groups:
             rule_groups[rule_type].append(rule)
 
     # 组合最终内容
     final_content = header
-    final_content += "\n".join(comments)
-    final_content += "\n\n# ======== 去重后的规则 ========\n"
     
-    # 按组添加规则（保持优先级顺序）
-    for group_name in ['DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']:
+    # 按组添加规则
+    for group_name in rule_groups:
         if rule_groups[group_name]:
             final_content += f"\n# {group_name}\n"
             final_content += '\n'.join(sorted(rule_groups[group_name]))
+            final_content += '\n'
 
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, FILTER_DIR, OUTPUT_FILE)
@@ -196,7 +184,7 @@ def update_readme(rule_count):
 {chr(10).join([f'- {name}: {url}' for name, url in FILTER_SOURCES.items()])}
 
 ## 使用方法
-规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/filter/ad_filter.list
+规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/{FILTER_DIR}/{OUTPUT_FILE}
 """
     
     with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
