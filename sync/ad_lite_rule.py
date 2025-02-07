@@ -7,8 +7,8 @@ from pathlib import Path
 import re
 
 # 配置项
-REPO_PATH = "ad"
-FILTER_DIR = "filter"
+REPO_PATH = "Rule"
+FILTER_DIR = "Advertising"
 OUTPUT_FILE = "AdLite.list"
 README_PATH = "README-rule.md"
 WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/ad/filter/white_list.text"
