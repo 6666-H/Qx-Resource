@@ -85,6 +85,7 @@ def standardize_rule(line):
 def get_rule_priority(rule_type):
     """获取规则优先级"""
     priorities = {
+        'GEOIP':0,
         'DOMAIN-REGEX': 1,
         'DOMAIN': 2,
         'DOMAIN-SUFFIX': 3,
