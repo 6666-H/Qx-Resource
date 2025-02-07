@@ -13,6 +13,7 @@ OUTPUT_FILE = "China_Max.list"
 README_PATH = "README_China_Max.md"
 
 FILTER_SOURCES = {
+    "GEOIP":"https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Direct.list",
     "China": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/China/China.list",
     "ChinaIPs": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/QuantumultX/ChinaIPs/ChinaIPs.list",
     "ChinaMax": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/ChinaMax/ChinaMax.list",
