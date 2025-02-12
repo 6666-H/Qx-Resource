@@ -73,7 +73,7 @@ def setup_directory():
 def download_and_merge_rules():
     """下载并合并重写规则"""
     beijing_time = get_beijing_time()
-    header = f"""# 广告拦截重写规则合集
+    header = f"""#!name = 重写规则合集
 # 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 # 合并自以下源：
 # {chr(10).join([f'# {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
@@ -175,7 +175,7 @@ def download_and_merge_rules():
 def update_readme(rule_count, hostname_count, script_count):
     """更新 README.md"""
     beijing_time = get_beijing_time()
-    content = f"""# 广告拦截重写规则合集
+    content = f"""#!name = 重写规则合集
 
 ## 更新时间
 {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
