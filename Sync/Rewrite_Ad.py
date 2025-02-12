@@ -74,7 +74,7 @@ def download_and_merge_rules():
     """下载并合并重写规则"""
     beijing_time = get_beijing_time()
     header = f"""#!name = 自建重写规则合集
-# !desc = 自建重写规则合集     
+#!desc = 自建重写规则合集     
 # 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 # 合并自以下源：
 # {chr(10).join([f'# {name}: {url}' for name, url in REWRITE_SOURCES.items()])}
