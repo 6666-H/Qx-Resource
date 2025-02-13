@@ -15,7 +15,7 @@ class Config:
         self.MAX_WORKERS = 10
         self.TIMEOUT = 30
         
-     # 规则源
+        # 规则源
         self.REWRITE_SOURCES = {
             "阻止常见的 HTTPDNS 服务器": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule",
             "广告平台拦截器": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B9%BF%E5%91%8A%E5%B9%B3%E5%8F%B0%E6%8B%A6%E6%88%AA%E5%99%A8.sgmodule",
@@ -41,22 +41,12 @@ class Config:
 class RuleType:
     """规则类型枚举"""
     GENERAL = 'general'
-    RULE = 'rule'
-    REWRITE = 'rewrite'
-    URL_REWRITE = 'url_rewrite'
-    HEADER_REWRITE = 'header_rewrite'
-    SCRIPT = 'script'
-    HOST = 'host'
+    REWRITE_LOCAL = 'rewrite_local'
     MITM = 'mitm'
-    PANEL = 'panel'
-    MAP_LOCAL = 'map_local'
-    URL_REGEX = 'url_regex'
-    DOMAIN_SUFFIX = 'domain_suffix'
-    IP_CIDR = 'ip_cidr'
-    SSID_SETTING = 'ssid_setting'
-    FILTER = 'filter'
-    DNS = 'dns'
-    POLICY = 'policy'
+    SCRIPT = 'script'
+    URL_REWRITE = 'url_rewrite'
+    HOST = 'host'
+    REWRITE = 'rewrite'
 
 class Rule:
     """规则对象"""
@@ -73,7 +63,6 @@ class Rule:
             RuleType.MITM: 90,
             RuleType.SCRIPT: 80,
             RuleType.REWRITE: 70,
-            RuleType.RULE: 60,
         }
         return priorities.get(self.type, 0)
 
@@ -88,23 +77,14 @@ class RuleProcessor:
         self.config = config
         self.rules: Dict[str, Set[Rule]] = {
             RuleType.GENERAL: set(),
-            RuleType.RULE: set(),
-            RuleType.REWRITE: set(),
-            RuleType.URL_REWRITE: set(),
-            RuleType.HEADER_REWRITE: set(),
-            RuleType.SCRIPT: set(),
-            RuleType.HOST: set(),
+            RuleType.REWRITE_LOCAL: set(),
             RuleType.MITM: set(),
-            RuleType.PANEL: set(),
-            RuleType.MAP_LOCAL: set(),
-            RuleType.URL_REGEX: set(),
-            RuleType.DOMAIN_SUFFIX: set(),
-            RuleType.IP_CIDR: set(),
-            RuleType.SSID_SETTING: set(),
-            RuleType.FILTER: set(),
-            RuleType.DNS: set(),
-            RuleType.POLICY: set(),
+            RuleType.SCRIPT: set(),
+            RuleType.URL_REWRITE: set(),
+            RuleType.HOST: set(),
+            RuleType.REWRITE: set(),
         }
+        self.in_js_block = False
 
     def download_rule(self, name: str, url: str) -> tuple:
         """下载规则源"""
@@ -118,42 +98,59 @@ class RuleProcessor:
 
     def identify_rule_type(self, line: str) -> str:
         """识别规则类型"""
-        line = line.lower()
-        if '[general]' in line:
-            return RuleType.GENERAL
-        elif '[rule]' in line:
-            return RuleType.RULE
-        elif '[rewrite]' in line:
-            return RuleType.REWRITE
-        elif '[script]' in line:
-            return RuleType.SCRIPT
-        elif '[mitm]' in line or 'hostname' in line:
+        line = line.strip().lower()
+        
+        # 检查是否进入或退出 JS 代码块
+        if '/*' in line:
+            self.in_js_block = True
+            return None
+        if '*/' in line:
+            self.in_js_block = False
+            return None
+        
+        # 如果在 JS 代码块内，跳过
+        if self.in_js_block:
+            return None
+            
+        # 忽略注释、空行和JS代码
+        if not line or line.startswith('#') or line.startswith('//'):
+            return None
+        if (line.startswith('function') or line.startswith('var') or 
+            line.startswith('let') or line.startswith('const')):
+            return None
+        if line.startswith('return') or line.startswith('switch'):
+            return None
+        if line.startswith('{') or line.startswith('}'):
+            return None
+            
+        # 识别规则头部
+        if line.startswith('[') and line.endswith(']'):
+            section = line[1:-1].lower()
+            if section in ['rewrite_local', 'mitm', 'general', 'script']:
+                return section
+                
+        # 识别具体规则
+        if 'hostname' in line:
             return RuleType.MITM
-        elif '[panel]' in line:
-            return RuleType.PANEL
-        elif 'domain-suffix' in line:
-            return RuleType.DOMAIN_SUFFIX
-        elif 'ip-cidr' in line:
-            return RuleType.IP_CIDR
-        elif 'url-regex' in line:
-            return RuleType.URL_REGEX
-        elif 'header-' in line:
-            return RuleType.HEADER_REWRITE
-        elif line.startswith('^'):
+        elif line.startswith('^https?://'):
             return RuleType.REWRITE
-        elif '.js' in line:
+        elif line.startswith('http') and 'script-path' in line:
             return RuleType.SCRIPT
-        return RuleType.RULE
+        elif '.js' in line and ('script-response' in line or 'script-request' in line):
+            return RuleType.SCRIPT
+            
+        return None
 
     def process_rule(self, line: str):
         """处理单条规则"""
         line = line.strip()
-        if not line or line.startswith('#'):
+        if not line:
             return
-
+            
         rule_type = self.identify_rule_type(line)
-        rule = Rule(line, rule_type)
-        self.rules[rule_type].add(rule)
+        if rule_type:  # 只添加识别出类型的规则
+            rule = Rule(line, rule_type)
+            self.rules[rule_type].add(rule)
 
     def process_rules(self, content: str):
         """处理规则内容"""
@@ -162,14 +159,6 @@ class RuleProcessor:
 
         current_section = None
         for line in content.splitlines():
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-
-            if line.startswith('[') and line.endswith(']'):
-                current_section = line.lower()[1:-1]
-                continue
-
             self.process_rule(line)
 
     def merge_rules(self):
