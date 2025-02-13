@@ -1,10 +1,8 @@
 import os
 import requests
 import datetime
-import re
 from datetime import timedelta
 from typing import Dict, Set, List
-from concurrent.futures import ThreadPoolExecutor
 
 class Config:
     def __init__(self):
@@ -38,72 +36,27 @@ class Config:
             "TF多账号合并":"https://raw.githubusercontent.com/NobyDa/Script/master/Surge/Module/TestFlightAccount.sgmodule"
         }
 
-class RuleType:
-    """规则类型枚举"""
-    GENERAL = 'general'
-    RULE = 'rule'
-    REWRITE = 'rewrite'
-    URL_REWRITE = 'url_rewrite'
-    HEADER_REWRITE = 'header_rewrite'
-    SCRIPT = 'script'
-    HOST = 'host'
-    MITM = 'mitm'
-    PANEL = 'panel'
-    MAP_LOCAL = 'map_local'
-    URL_REGEX = 'url_regex'
-    DOMAIN_SUFFIX = 'domain_suffix'
-    IP_CIDR = 'ip_cidr'
-    SSID_SETTING = 'ssid_setting'
-    FILTER = 'filter'
-    DNS = 'dns'
-    POLICY = 'policy'
-
-class Rule:
-    """规则对象"""
-    def __init__(self, content: str, rule_type: str, enabled: bool = True):
-        self.content = content.strip()
-        self.type = rule_type
-        self.enabled = enabled
-        self.priority = self._get_priority()
-
-    def _get_priority(self) -> int:
-        """获取规则优先级"""
-        priorities = {
-            RuleType.GENERAL: 100,
-            RuleType.MITM: 90,
-            RuleType.SCRIPT: 80,
-            RuleType.REWRITE: 70,
-            RuleType.RULE: 60,
-        }
-        return priorities.get(self.type, 0)
-
-    def __eq__(self, other):
-        return self.content == other.content and self.type == other.type
-
-    def __hash__(self):
-        return hash((self.content, self.type))
-
 class RuleProcessor:
-    def __init__(self, config: Config):
+    def __init__(self, config):
         self.config = config
-        self.rules: Dict[str, Set[Rule]] = {
-            RuleType.GENERAL: set(),
-            RuleType.RULE: set(),
-            RuleType.REWRITE: set(),
-            RuleType.URL_REWRITE: set(),
-            RuleType.HEADER_REWRITE: set(),
-            RuleType.SCRIPT: set(),
-            RuleType.HOST: set(),
-            RuleType.MITM: set(),
-            RuleType.PANEL: set(),
-            RuleType.MAP_LOCAL: set(),
-            RuleType.URL_REGEX: set(),
-            RuleType.DOMAIN_SUFFIX: set(),
-            RuleType.IP_CIDR: set(),
-            RuleType.SSID_SETTING: set(),
-            RuleType.FILTER: set(),
-            RuleType.DNS: set(),
-            RuleType.POLICY: set(),
+        self.rule_types = {
+            'general': set(),      
+            'rule': set(),         
+            'rewrite': set(),      
+            'url_rewrite': set(),  
+            'header_rewrite': set(), 
+            'script': set(),       
+            'host': set(),         
+            'mitm': set(),         
+            'panel': set(),        
+            'map_local': set(),    
+            'url_regex': set(),    
+            'domain_suffix': set(), 
+            'ip_cidr': set(),      
+            'ssid_setting': set(), 
+            'filter': set(),       
+            'dns': set(),          
+            'policy': set()        
         }
 
     def download_rule(self, name: str, url: str) -> tuple:
@@ -111,98 +64,129 @@ class RuleProcessor:
         try:
             response = requests.get(url, timeout=self.config.TIMEOUT)
             response.raise_for_status()
-            return name, response.text
+            content = response.text
+            return name, content
         except Exception as e:
             print(f"Error downloading {name}: {e}")
             return name, None
 
-    def identify_rule_type(self, line: str) -> str:
-        """识别规则类型"""
-        line = line.strip().lower()
+    def _detect_section(self, line: str) -> str:
+        """检测规则所属段落(不区分大小写)"""
+        line_lower = line.lower()
         
-        # 忽略注释和空行
-        if not line or line.startswith('#') or line.startswith('//'):
-            return None
-            
-        # 忽略 JSON 格式的内容
-        if (line.startswith('{') or line.startswith('[') or 
-            line.startswith('"') or line.startswith("'")):
-            return None
-            
-        # 忽略函数定义和变量声明
-        if (line.startswith('function') or line.startswith('var') or 
-            line.startswith('let') or line.startswith('const')):
-            return None
+        section_markers = {
+            'general': ['[general]'],
+            'rule': ['[rule]'],
+            'rewrite': ['[rewrite]'],
+            'url_rewrite': ['[url rewrite]', '[url_rewrite]'],
+            'header_rewrite': ['[header rewrite]', '[header_rewrite]'],
+            'script': ['[script]'],
+            'mitm': ['[mitm]'],
+            'panel': ['[panel]'],
+            'map_local': ['[map local]', '[map_local]'],
+            'filter': ['[filter]'],
+            'dns': ['[dns]'],
+            'policy': ['[policy]']
+        }
         
-        # 识别特定的规则头部
-        if line.startswith('[') and line.endswith(']'):
-            section = line[1:-1].lower()
-            if section in ['general', 'rule', 'rewrite', 'script', 'mitm', 'panel']:
+        for section, markers in section_markers.items():
+            if any(line_lower.startswith(marker) for marker in markers):
                 return section
-                
-        # 识别具体的规则类型
-        if 'hostname' in line:
-            return RuleType.MITM
-        elif 'domain-suffix' in line:
-            return RuleType.DOMAIN_SUFFIX
-        elif 'ip-cidr' in line:
-            return RuleType.IP_CIDR
-        elif 'url-regex' in line:
-            return RuleType.URL_REGEX
-        elif line.startswith('^https?://'):
-            return RuleType.REWRITE
-        elif '.js' in line and ('url script-' in line or 'requires-body=1' in line):
-            return RuleType.SCRIPT
-            
-        # 如果不符合任何规则格式，返回 None
         return None
 
-    def process_rule(self, line: str):
-        """处理单条规则"""
-        line = line.strip()
-        if not line:
-            return
-            
-        rule_type = self.identify_rule_type(line)
-        if rule_type:  # 只添加识别出类型的规则
-            rule = Rule(line, rule_type)
-            self.rules[rule_type].add(rule)
-
-    def process_rules(self, content: str):
+    def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
         if not content:
-            return
-
+            return self.rule_types.copy()
+            
         current_section = None
+        
         for line in content.splitlines():
             line = line.strip()
             if not line or line.startswith('#'):
                 continue
-
-            if line.startswith('[') and line.endswith(']'):
-                current_section = line.lower()[1:-1]
+                
+            section = self._detect_section(line)
+            if section:
+                current_section = section
                 continue
+                
+            if current_section:
+                self._process_line(line, current_section)
+            else:
+                self._process_unmarked_line(line)
+                
+        return self.rule_types
 
-            self.process_rule(line)
+    def _process_line(self, line: str, section: str):
+        """处理有section标记的规则"""
+        if section == 'mitm' and 'hostname' in line.lower():
+            self._process_hostname(line, self.rule_types)
+        else:
+            self.rule_types[section].add(line)
 
-    def merge_rules(self):
-        """合并所有规则"""
-        with ThreadPoolExecutor(max_workers=self.config.MAX_WORKERS) as executor:
-            future_to_url = {
-                executor.submit(self.download_rule, name, url): name 
-                for name, url in self.config.REWRITE_SOURCES.items()
-            }
-            
-            for future in future_to_url:
-                name = future_to_url[future]
-                try:
-                    _, content = future.result()
-                    if content:
-                        self.process_rules(content)
-                except Exception as e:
-                    print(f"Error processing {name}: {e}")
+    def _process_unmarked_line(self, line: str):
+        """处理未标记section的规则(不区分大小写)"""
+        line_lower = line.lower()
+        
+        if 'hostname' in line_lower:
+            self._process_hostname(line, self.rule_types)
+        elif any(pattern.lower() in line_lower for pattern in ['DOMAIN-SUFFIX', 'DOMAIN']):
+            self.rule_types['domain_suffix'].add(line)
+        elif 'ip-cidr' in line_lower:
+            self.rule_types['ip_cidr'].add(line)
+        elif 'ssid' in line_lower:
+            self.rule_types['ssid_setting'].add(line)
+        elif any(pattern.lower() in line_lower for pattern in ['url script', 'url reject', '^']):
+            self.rule_types['rewrite'].add(line)
+        elif '.js' in line_lower or 'script-path' in line_lower:
+            self.rule_types['script'].add(line)
+        elif any(pattern.lower() in line_lower for pattern in ['url 302', 'url 307']):
+            self.rule_types['url_rewrite'].add(line)
 
-    def generate_output(self) -> str:
+    def _process_hostname(self, line: str, rules: Dict[str, Set[str]]):
+        """处理hostname规则"""
+        if '=' in line:
+            hostnames = line.split('=')[1].strip()
+            hostnames = hostnames.replace('%APPEND%', '').strip()
+            for hostname in hostnames.split(','):
+                hostname = hostname.strip()
+                if hostname and not hostname.startswith('#'):
+                    rules['host'].add(hostname)
+
+    def deduplicate_hostnames(self, hostnames: Set[str]) -> str:
+        """去重和排序hostname"""
+        hostname_list = sorted(hostnames)
+        wildcards = set()
+        specific = set()
+        
+        for hostname in hostname_list:
+            if hostname.startswith('*'):
+                wildcards.add(hostname)
+            else:
+                specific.add(hostname)
+        
+        final_specific = set()
+        for hostname in specific:
+            should_keep = True
+            for wildcard in wildcards:
+                if self._is_covered_by_wildcard(hostname, wildcard):
+                    should_keep = False
+                    break
+            if should_keep:
+                final_specific.add(hostname)
+        
+        final_hostnames = sorted(wildcards | final_specific)
+        return ','.join(final_hostnames)
+    
+    def _is_covered_by_wildcard(self, hostname: str, wildcard: str) -> bool:
+        """检查域名是否被通配符覆盖"""
+        if not wildcard.startswith('*'):
+            return False
+        domain_suffix = wildcard[1:]
+        return hostname.endswith(domain_suffix)
+
+    def generate_output(self, rules: Dict[str, Set[str]]) -> str:
         """生成最终的规则文件"""
         beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
         
@@ -215,41 +199,73 @@ class RuleProcessor:
             ""
         ]
 
-        # 按优先级排序并添加各类型规则
-        for rule_type, rules in self.rules.items():
-            if rules:
-                sorted_rules = sorted(rules, key=lambda x: (-x.priority, x.content))
+        sections = [
+            ('GENERAL', 'general'),
+            ('RULE', 'rule'),
+            ('REWRITE', 'rewrite'),
+            ('URL-REWRITE', 'url_rewrite'),
+            ('HEADER-REWRITE', 'header_rewrite'),
+            ('SCRIPT', 'script'),
+            ('PANEL', 'panel'),
+            ('MAP-LOCAL', 'map_local'),
+            ('DOMAIN-SUFFIX', 'domain_suffix'),
+            ('IP-CIDR', 'ip_cidr'),
+            ('SSID-SETTING', 'ssid_setting'),
+            ('FILTER', 'filter'),
+            ('DNS', 'dns'),
+            ('POLICY', 'policy')
+        ]
+
+        for section_name, section_key in sections:
+            if rules[section_key]:
                 content.extend([
-                    f"[{rule_type.upper()}]",
-                    *[rule.content for rule in sorted_rules],
+                    f"[{section_name}]",
+                    *sorted(rules[section_key]),
                     ""
                 ])
 
+        if rules['host']:
+            content.extend([
+                "[MITM]",
+                f"hostname = {self.deduplicate_hostnames(rules['host'])}",
+                ""
+            ])
+
         return '\n'.join(content)
 
-    def update_readme(self):
+    def merge_rules(self) -> Dict[str, Set[str]]:
+        """合并所有规则"""
+        merged_rules = self.rule_types.copy()
+        
+        for name, url in self.config.REWRITE_SOURCES.items():
+            print(f"Downloading {name}...")
+            _, content = self.download_rule(name, url)
+            if content:
+                rules = self.process_rules(content)
+                for key in merged_rules:
+                    merged_rules[key].update(rules[key])
+        
+        return merged_rules
+
+    def update_readme(self, rules: Dict[str, Set[str]]):
         """更新README文件"""
         beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
-        
-        total_rules = sum(len(rules) for rules in self.rules.values())
         
         content = f"""# 自建重写规则合集
 
 ## 更新时间
 {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 
-## 规则统计
-总规则数：{total_rules}
+## 规则说明
+本重写规则集合并自各个开源规则，去除重复规则。
+- 重写规则数量：{len(rules['rewrite'])}
+- 主机名数量：{len(rules['host'])}
+- 脚本数量：{len(rules['script'])}
+
+## 规则来源
+{chr(10).join([f'- {name}: {url}' for name, url in self.config.REWRITE_SOURCES.items()])}
 """
-
-        # 添加各类型规则统计
-        for rule_type, rules in self.rules.items():
-            if rules:
-                content += f"- {rule_type}: {len(rules)}条规则\n"
-
-        content += "\n## 规则来源\n"
-        content += '\n'.join([f'- {name}: {url}' for name, url in self.config.REWRITE_SOURCES.items()])
-
+        
         os.makedirs(self.config.REPO_PATH, exist_ok=True)
         with open(os.path.join(self.config.REPO_PATH, self.config.README_PATH), 'w', encoding='utf-8') as f:
             f.write(content)
@@ -259,22 +275,17 @@ def main():
     processor = RuleProcessor(config)
     
     try:
-        # 创建输出目录
         os.makedirs(os.path.join(config.REPO_PATH, config.REWRITE_DIR), exist_ok=True)
         
-        # 合并规则
-        processor.merge_rules()
+        rules = processor.merge_rules()
         
-        # 生成输出文件
-        output = processor.generate_output()
+        output = processor.generate_output(rules)
         
-        # 写入文件
         output_path = os.path.join(config.REPO_PATH, config.REWRITE_DIR, config.OUTPUT_FILE)
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(output)
             
-        # 更新 README
-        processor.update_readme()
+        processor.update_readme(rules)
         
         print("Successfully generated rules and README")
         
