@@ -71,95 +71,91 @@ class RuleProcessor:
             self.logger.error(f"Failed to download rules from {name}: {e}")
             return ""
 
-    def parse_section(self, content: str) -> Tuple[Dict[str, Set[str]], Dict[str, str]]:
-        """解析规则内容,支持所有标签类型"""
-        sections = {}
-        current_section = None
-        metadata = {}
+def parse_section(self, content: str) -> Tuple[Dict[str, Set[str]], Dict[str, str]]:
+    """解析规则内容"""
+    sections = {}
+    current_section = None
+    metadata = {}
+    in_comment_block = False
+    
+    lines = content.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
         
-        for line in content.splitlines():
-            line = line.strip()
+        # 处理多行注释
+        if line.startswith('/*'):
+            in_comment_block = True
+            i += 1
+            continue
+        elif line.endswith('*/'):
+            in_comment_block = False
+            i += 1
+            continue
+        elif in_comment_block:
+            i += 1
+            continue
             
-            # 跳过空行
-            if not line:
-                continue
-                
-            # 处理元数据
-            if line.startswith('#!'):
-                key_value = line[2:].split('=', 1)
-                if len(key_value) == 2:
-                    metadata[key_value[0].strip()] = key_value[1].strip()
-                continue
-                
-            # 处理注释
-            if line.startswith('#'):
-                continue
-                
-            # 处理section标记
-            if line.startswith('[') and line.endswith(']'):
-                current_section = line[1:-1]
-                if current_section not in sections:
-                    sections[current_section] = set()
-                continue
-                
-            # 处理hostname
-            if 'hostname' in line.lower() and '=' in line:
-                self.process_hostname(line)
-                if current_section:
-                    sections[current_section].add(line)
-                continue
-                
-            # 将内容添加到当前section
-            if current_section:
+        # 跳过空行和单行注释
+        if not line or line.startswith('//') or line.startswith('#'):
+            i += 1
+            continue
+            
+        # 处理重写规则部分
+        if line.startswith('[rewrite_local]'):
+            current_section = 'Script'
+            if current_section not in sections:
+                sections[current_section] = set()
+            i += 1
+            continue
+            
+        # 处理mitm部分
+        if line.startswith('[mitm]'):
+            current_section = 'MITM'
+            if current_section not in sections:
+                sections[current_section] = set()
+            i += 1
+            continue
+            
+        # 处理hostname
+        if line.startswith('hostname'):
+            if 'MITM' not in sections:
+                sections['MITM'] = set()
+            sections['MITM'].add(line)
+            i += 1
+            continue
+            
+        # 将内容添加到当前section
+        if current_section and line:
+            if current_section == 'Script':
+                # 处理重写规则
+                parts = line.split('script-path=')
+                if len(parts) > 1:
+                    pattern = parts[0].split(None, 1)[0]
+                    script_config = parts[1].split(',')
+                    script_path = script_config[0]
+                    
+                    # 提取额外参数
+                    extra_params = []
+                    for param in script_config[1:]:
+                        param = param.strip()
+                        if param:
+                            extra_params.append(param)
+                    
+                    script_line = f"{pattern} = type=http-request,script-path={script_path}"
+                    
+                    # 添加额外参数
+                    if extra_params:
+                        script_line += f",{','.join(extra_params)}"
+                        
+                    sections[current_section].add(script_line)
+            else:
                 sections[current_section].add(line)
         
-        return sections, metadata
+        i += 1
+    
+    return sections, metadata
 
-    def process_hostname(self, line: str):
-        """处理hostname行"""
-        hostnames = line.split('=')[1].strip()
-        hostnames = hostnames.replace('%APPEND%', '').strip()
-        self.hostnames.update(h.strip() for h in hostnames.split(',') if h.strip())
-
-    def merge_rules(self) -> Tuple[str, Dict[str, int]]:
-        """合并所有规则并按section分类"""
-        # 添加元数据
-        merged_content = self.generate_header()
-        
-        # 添加所有收集到的元数据
-        for metadata in sorted(self.metadata_collection, key=lambda x: x.get('name', '')):
-            for key, value in metadata.items():
-                merged_content += f"#!{key}={value}\n"
-        
-        merged_content += "\n"
-        
-        # 获取所有可能的section类型
-        all_sections = set()
-        for rules in self.rules_collection.values():
-            all_sections.update(rules.keys())
-        
-        stats = {'total': 0}
-        
-        # 按section名称排序处理规则
-        for section in sorted(all_sections):
-            section_rules = set()
-            for rules in self.rules_collection.values():
-                if section in rules:
-                    section_rules.update(rules[section])
-            
-            if section_rules:
-                merged_content += f"\n[{section}]\n"
-                sorted_rules = sorted(section_rules)
-                merged_content += '\n'.join(sorted_rules) + '\n'
-                stats[section] = len(sorted_rules)
-                stats['total'] += len(sorted_rules)
-        
-        # 添加MITM配置
-        if self.hostnames:
-            merged_content += "\n[MITM]\n"
-            merged_content += f"hostname = {', '.join(sorted(self.hostnames))}\n"
-        
-        return merged_content, stats
 
     def generate_header(self) -> str:
         """生成规则文件头部信息"""
