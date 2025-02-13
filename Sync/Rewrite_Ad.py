@@ -57,7 +57,8 @@ REWRITE_SOURCES = {
     "小黑盒去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E9%BB%91%E7%9B%92%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule",
     "网易云音乐去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule",
     "京东比价": "https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js",
-    "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js"
+    "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js",
+    "TF多账号合并":"https://raw.githubusercontent.com/NobyDa/Script/master/Surge/Module/TestFlightAccount.sgmodule"
 }
 
 def get_beijing_time():
