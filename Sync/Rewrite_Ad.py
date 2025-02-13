@@ -5,10 +5,11 @@ from datetime import timedelta
 import git
 from pathlib import Path
 import logging
-import concurrent.futures  # 添加这个导入
+import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
+from typing import Dict, Set, List
 
-# 配置类
 class Config:
     def __init__(self):
         self.REPO_PATH = "Rewrite"
@@ -41,7 +42,6 @@ class Config:
             "TF多账号合并":"https://raw.githubusercontent.com/NobyDa/Script/master/Surge/Module/TestFlightAccount.sgmodule"
         }
 
-# 规则处理类
 class RuleProcessor:
     def __init__(self, config):
         self.config = config
@@ -57,34 +57,65 @@ class RuleProcessor:
             ]
         )
     
-    def clean_rule(self, rule):
+    def clean_rule(self, rule: str) -> str:
         """清理和标准化规则"""
+        # 移除注释
+        rule = re.sub(r'#.*$', '', rule)
+        # 移除前后空白
         rule = rule.strip()
-        if '#' in rule:
-            rule = rule.split('#')[0].strip()
+        # 标准化空格
+        rule = re.sub(r'\s+', ' ', rule)
         return rule
-    
-    def is_valid_rule(self, rule):
+
+    def normalize_hostname(self, hostname: str) -> str:
+        """标准化主机名"""
+        return hostname.lower().strip('.*')
+
+    def is_valid_rule(self, rule: str) -> bool:
         """验证规则有效性"""
-        return bool(rule and not rule.startswith('#'))
+        if not rule or rule.startswith('#'):
+            return False
+        # 检查基本语法
+        if rule.startswith('^') and ('url' in rule or 'hostname' in rule):
+            return True
+        # 检查脚本规则
+        if '.js' in rule and ('script-response-body' in rule or 'script-request-body' in rule):
+            return True
+        return False
 
-    def download_rule(self, name, url):
-        """下载单个规则源"""
-        try:
-            response = requests.get(url, timeout=self.config.TIMEOUT)
-            response.raise_for_status()
-            return name, response.text
-        except Exception as e:
-            logging.error(f"Error downloading {name}: {str(e)}")
-            return name, None
+    def deduplicate_rules(self, rules: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
+        """去除重复规则"""
+        result = {
+            'rewrite': set(),
+            'mitm': set(),
+            'host': set(),
+            'script': set()
+        }
+        
+        # 对重写规则进行去重和合并
+        for rule in rules['rewrite']:
+            normalized_rule = self.clean_rule(rule)
+            if self.is_valid_rule(normalized_rule):
+                result['rewrite'].add(normalized_rule)
+        
+        # 对主机名进行去重和标准化
+        for host in rules['host']:
+            normalized_host = self.normalize_hostname(host)
+            if normalized_host:
+                result['host'].add(normalized_host)
+                
+        # 对脚本规则进行去重
+        result['script'] = set(rules['script'])
+        
+        return result
 
-    def process_rules(self, content):
+    def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
         rules = {
             'rewrite': set(),
             'mitm': set(),
             'host': set(),
-            'script': []
+            'script': set()
         }
         
         if not content:
@@ -92,26 +123,31 @@ class RuleProcessor:
             
         for line in content.splitlines():
             line = self.clean_rule(line)
-            if not self.is_valid_rule(line):
+            if not line:
                 continue
                 
+            # 处理主机名规则
             if 'hostname' in line.lower():
                 self._process_hostname(line, rules)
+            # 处理重写规则
             elif line.startswith('^'):
                 rules['rewrite'].add(line)
-            elif line.endswith('.js'):
-                rules['script'].append(line)
+            # 处理脚本规则
+            elif '.js' in line:
+                rules['script'].add(line)
                 
         return rules
 
-    def _process_hostname(self, line, rules):
-        """处理 hostname 规则"""
+    def _process_hostname(self, line: str, rules: Dict[str, Set[str]]):
+        """处理主机名规则"""
         if '=' in line:
             hostnames = line.split('=')[1].strip()
             hostnames = hostnames.replace('%APPEND%', '').strip()
-            rules['host'].update(h.strip() for h in hostnames.split(',') if h.strip())
+            for hostname in hostnames.split(','):
+                if hostname := self.normalize_hostname(hostname):
+                    rules['host'].add(hostname)
 
-    def merge_rules(self):
+    def merge_rules(self) -> Dict[str, Set[str]]:
         """合并所有规则"""
         logging.info("Starting rules merge...")
         
@@ -119,100 +155,66 @@ class RuleProcessor:
             'rewrite': set(),
             'mitm': set(),
             'host': set(),
-            'script': []
+            'script': set()
         }
         
-        # 并发下载规则
         with ThreadPoolExecutor(max_workers=self.config.MAX_WORKERS) as executor:
             future_to_url = {
-                executor.submit(self.download_rule, name, url): name 
+                executor.submit(self.download_rule, name, url): (name, url) 
                 for name, url in self.config.REWRITE_SOURCES.items()
             }
             
-            for future in concurrent.futures.as_completed(future_to_url):
-                name = future_to_url[future]
+            for future in as_completed(future_to_url):
+                name, url = future_to_url[future]
                 try:
-                    name, content = future.result()
+                    _, content = future.result()
                     if content:
                         rules = self.process_rules(content)
                         # 合并规则
-                        merged_rules['rewrite'].update(rules['rewrite'])
-                        merged_rules['host'].update(rules['host'])
-                        merged_rules['script'].extend(rules['script'])
+                        for key in merged_rules:
+                            merged_rules[key].update(rules[key])
                 except Exception as e:
-                    logging.error(f"Error processing {name}: {str(e)}")
-                    
-        return merged_rules
+                    logging.error(f"Error processing {name} ({url}): {str(e)}")
+        
+        # 去重和清理规则
+        return self.deduplicate_rules(merged_rules)
 
-    def generate_output(self, rules):
+    def generate_output(self, rules: Dict[str, Set[str]]) -> str:
         """生成最终的规则文件"""
         beijing_time = self.get_beijing_time()
         
-        # 生成文件头
-        header = self._generate_header(beijing_time)
-        
-        # 组合规则内容
-        content = []
-        content.append(header)
+        content = [self._generate_header(beijing_time)]
         
         # 添加重写规则
         if rules['rewrite']:
             content.append("\n[REWRITE]")
             content.extend(sorted(rules['rewrite']))
-            
-        # 添加主机名规则    
+        
+        # 添加主机名规则
         if rules['host']:
             content.append("\n[MITM]")
             content.append(f"hostname = {','.join(sorted(rules['host']))}")
-            
+        
         # 添加脚本规则
         if rules['script']:
             content.append("\n[SCRIPT]")
             content.extend(sorted(rules['script']))
-            
+        
         return '\n'.join(content)
 
-    def _generate_header(self, time):
-        """生成规则文件头部"""
-        return f"""#!name = 自建重写规则合集
-#!desc = 自建重写规则合集     
-# 更新时间：{time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-# 合并自以下源：
-{chr(10).join([f'# {name}: {url}' for name, url in self.config.REWRITE_SOURCES.items()])}
-"""
+    def validate_output(self, content: str) -> bool:
+        """验证输出内容的有效性"""
+        required_sections = ['[REWRITE]', '[MITM]', '[SCRIPT]']
+        for section in required_sections:
+            if section not in content:
+                logging.warning(f"Missing section: {section}")
+                return False
+        return True
 
-    def get_beijing_time(self):
-        """获取北京时间"""
-        utc_now = datetime.datetime.utcnow()
-        beijing_time = utc_now + timedelta(hours=8)
-        return beijing_time
-
-    def update_readme(self, rules):
-        """更新 README 文件"""
-        beijing_time = self.get_beijing_time()
-        content = f"""# 自建重写规则合集
-
-## 更新时间
-{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-
-## 规则说明
-本重写规则集合并自各个开源规则，去除重复规则。
-- 重写规则数量：{len(rules['rewrite'])}
-- 主机名数量：{len(rules['host'])}
-- 脚本数量：{len(rules['script'])}
-
-## 规则来源
-{chr(10).join([f'- {name}: {url}' for name, url in self.config.REWRITE_SOURCES.items()])}
-"""
-        
-        with open(os.path.join(self.config.REPO_PATH, self.config.README_PATH), 'w', encoding='utf-8') as f:
-            f.write(content)
+    # 其他方法保持不变...
 
 def main():
-    # 初始化配置
     config = Config()
-    
-    # 创建规则处理器
     processor = RuleProcessor(config)
     
     try:
@@ -224,6 +226,13 @@ def main():
         
         # 生成输出文件
         output = processor.generate_output(rules)
+        
+        # 验证输出
+        if not processor.validate_output(output):
+            logging.error("Generated output validation failed")
+            return
+            
+        # 写入文件
         output_path = os.path.join(config.REPO_PATH, config.REWRITE_DIR, config.OUTPUT_FILE)
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(output)
