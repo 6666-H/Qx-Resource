@@ -1,0 +1,20 @@
+2025-02-13 06:00:12,230 - INFO - Successfully downloaded rules from 阻止常见的 HTTPDNS 服务器
+2025-02-13 06:00:12,396 - INFO - Successfully downloaded rules from 广告平台拦截器
+2025-02-13 06:00:12,680 - ERROR - Failed to download rules from whatshubs开屏屏蔽: 404 Client Error: Not Found for url: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/manual/rewrite/adultraplus.conf
+2025-02-13 06:00:12,862 - INFO - Successfully downloaded rules from whatshubAdBlock
+2025-02-13 06:00:13,075 - INFO - Successfully downloaded rules from chxm去广告
+2025-02-13 06:00:13,257 - INFO - Successfully downloaded rules from 墨鱼去开屏V2.0
+2025-02-13 06:00:13,293 - INFO - Successfully downloaded rules from 广告拦截精简版
+2025-02-13 06:00:13,593 - INFO - Successfully downloaded rules from 去广告重写
+2025-02-13 06:00:13,787 - INFO - Successfully downloaded rules from 整合广告拦截
+2025-02-13 06:00:13,991 - INFO - Successfully downloaded rules from surge去广告
+2025-02-13 06:00:14,170 - INFO - Successfully downloaded rules from YouTube去广告
+2025-02-13 06:00:14,358 - INFO - Successfully downloaded rules from YouTube双语翻译
+2025-02-13 06:00:14,547 - INFO - Successfully downloaded rules from 小红书去广告
+2025-02-13 06:00:14,774 - INFO - Successfully downloaded rules from 微博去广告
+2025-02-13 06:00:14,955 - INFO - Successfully downloaded rules from 小黑盒去广告
+2025-02-13 06:00:15,164 - INFO - Successfully downloaded rules from 网易云音乐去广告
+2025-02-13 06:00:15,319 - INFO - Successfully downloaded rules from 京东比价
+2025-02-13 06:00:15,493 - INFO - Successfully downloaded rules from 1998解锁
+2025-02-13 06:00:15,740 - INFO - Successfully downloaded rules from TF多账号合并
+2025-02-13 06:00:15,743 - ERROR - Failed to push to repository: /home/runner/work/QuantumultX-Resource/QuantumultX-Resource/Rewrite

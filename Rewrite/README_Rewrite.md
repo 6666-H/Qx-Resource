@@ -1,13 +1,24 @@
-#!name = 自建重写规则合集
-
-## 更新时间
-2025-02-13 13:19:27 (北京时间)
+# 自建重写规则合集
 
 ## 规则说明
-本重写规则集合并自各个开源规则，去除重复规则。
-- 当前规则数量：2849
-- 当前 hostname 数量：1279
-- 当前 脚本 数量：165
+本规则集合并自各个开源规则，经过整理和去重。
+
+## 规则统计
+- 总规则数：904
+- hostname数：1279
+- Body Rewrite规则数：21
+- General规则数：3
+- Header Rewrite规则数：2
+- MITM规则数：10
+- Map Local规则数：124
+- Rule规则数：364
+- Script规则数：144
+- URL Rewrite规则数：60
+- mitm规则数：174
+- rewrite_local规则数：2
+
+## 更新时间
+2025-02-13 14:00:15 (北京时间)
 
 ## 规则来源
 - 阻止常见的 HTTPDNS 服务器: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule
@@ -29,6 +40,3 @@
 - 京东比价: https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js
 - 1998解锁: https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js
 - TF多账号合并: https://raw.githubusercontent.com/NobyDa/Script/master/Surge/Module/TestFlightAccount.sgmodule
-
-## 使用方法
-规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/rewrite/ad_rewrite.conf
