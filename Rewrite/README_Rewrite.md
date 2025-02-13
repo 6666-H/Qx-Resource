@@ -1,18 +1,14 @@
 # 自建重写规则合集
 
 ## 更新时间
-2025-02-13 18:15:03 (北京时间)
+2025-02-13 18:23:20 (北京时间)
 
 ## 规则统计
-总规则数：4166
-- rule: 613条规则
-- rewrite: 3268条规则
-- header_rewrite: 2条规则
-- script: 172条规则
-- mitm: 19条规则
-- url_regex: 10条规则
-- domain_suffix: 37条规则
-- ip_cidr: 45条规则
+总规则数：35
+- general: 1条规则
+- mitm: 5条规则
+- script: 14条规则
+- rewrite: 15条规则
 
 ## 规则来源
 - 阻止常见的 HTTPDNS 服务器: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule
