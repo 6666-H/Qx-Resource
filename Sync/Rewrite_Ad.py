@@ -50,12 +50,12 @@ class RuleProcessor:
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
-        rules = {'rule': set()}  # 默认创建 'rule' 标签用于存储无标签规则
+        rules = {'url-rewrite': set()}  # 默认创建 'url-rewrite' 标签用于存储无标签规则
         
         if not content:
             return rules
             
-        current_section = 'rule'  # 默认使用 'rule' 标签
+        current_section = 'url-rewrite'  # 默认使用 'url-rewrite' 标签
         
         for line in content.splitlines():
             line = line.strip()
