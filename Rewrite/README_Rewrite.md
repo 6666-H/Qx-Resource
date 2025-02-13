@@ -1,20 +1,20 @@
 # 自建重写规则合集
 
 ## 更新时间
-2025-02-13 21:45:09 (北京时间)
+2025-02-13 21:59:41 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
-- Url-Rewrite 规则数量：3253
-- General 规则数量：2
-- Rule 规则数量：364
-- Url Rewrite 规则数量：60
-- Mitm 规则数量：0
+- Url-Rewrite 规则数量：3157
+- General 规则数量：0
+- Rule 规则数量：0
+- Url Rewrite 规则数量：0
+- Mitm 规则数量：253
 - Host 规则数量：1354
-- Body Rewrite 规则数量：21
-- Map Local 规则数量：124
-- Script 规则数量：143
-- Header Rewrite 规则数量：2
+- Body Rewrite 规则数量：0
+- Map Local 规则数量：0
+- Script 规则数量：1
+- Header Rewrite 规则数量：0
 
 ## 规则来源
 - 阻止常见的 HTTPDNS 服务器: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule
