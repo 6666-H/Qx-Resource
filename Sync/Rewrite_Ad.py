@@ -59,19 +59,158 @@ class RuleProcessor:
             'policy': set()        
         }
 
-    def download_rule(self, name: str, url: str) -> tuple:
-        """下载规则源"""
-        try:
-            response = requests.get(url, timeout=self.config.TIMEOUT)
-            response.raise_for_status()
-            content = response.text
-            return name, content
-        except Exception as e:
-            print(f"Error downloading {name}: {e}")
-            return name, None
+    def _process_reject_rules(self, rules: Set[str]) -> Set[str]:
+        """处理reject规则的优先级"""
+        url_rules = {}
+        
+        # 定义优先级 (数字越大优先级越高)
+        priorities = {
+            'reject-dict': 3,
+            'reject-array': 3,
+            'reject-200': 2,
+            'reject-img': 2,
+            'reject': 1
+        }
+
+        for rule in rules:
+            try:
+                url_pattern = rule.split('url')[0].strip()
+                action = rule.split('url')[1].strip()
+
+                current_priority = 0
+                for action_type, priority in priorities.items():
+                    if action_type in action:
+                        current_priority = priority
+                        break
+
+                if url_pattern in url_rules:
+                    existing_action = url_rules[url_pattern].split('url')[1].strip()
+                    existing_priority = 0
+                    for action_type, priority in priorities.items():
+                        if action_type in existing_action:
+                            existing_priority = priority
+                            break
+                    
+                    if current_priority > existing_priority:
+                        url_rules[url_pattern] = rule
+                else:
+                    url_rules[url_pattern] = rule
+
+            except Exception as e:
+                print(f"Error processing rule: {rule}")
+                continue
+
+        return set(url_rules.values())
+
+    def _process_response_rules(self, rules: Set[str]) -> Set[str]:
+        """处理response规则的优先级"""
+        url_rules = {}
+        
+        priorities = {
+            'random-response': 2,
+            'response-body': 1
+        }
+
+        for rule in rules:
+            try:
+                url_pattern = rule.split('url')[0].strip()
+                action = rule.split('url')[1].strip()
+
+                current_priority = 0
+                for action_type, priority in priorities.items():
+                    if action_type in action:
+                        current_priority = priority
+                        break
+
+                if url_pattern in url_rules:
+                    existing_action = url_rules[url_pattern].split('url')[1].strip()
+                    existing_priority = 0
+                    for action_type, priority in priorities.items():
+                        if action_type in existing_action:
+                            existing_priority = priority
+                            break
+                    
+                    if current_priority > existing_priority:
+                        url_rules[url_pattern] = rule
+                else:
+                    url_rules[url_pattern] = rule
+
+            except Exception as e:
+                print(f"Error processing rule: {rule}")
+                continue
+
+        return set(url_rules.values())
+
+    def _process_script_rules(self, rules: Set[str]) -> Set[str]:
+        """处理脚本规则，保留第一个遇到的规则"""
+        url_rules = {}
+        
+        for rule in rules:
+            try:
+                parts = rule.split('url')
+                if len(parts) != 2:
+                    continue
+                    
+                url_pattern = parts[0].strip()
+                
+                # 如果URL还没有对应的规则，就保存这个规则（保留第一个）
+                if url_pattern not in url_rules:
+                    url_rules[url_pattern] = rule
+
+            except Exception as e:
+                print(f"Error processing script rule: {rule}")
+                continue
+
+        return set(url_rules.values())
+
+    def process_rules(self, content: str) -> Dict[str, Set[str]]:
+        """处理规则内容"""
+        if not content:
+            return self.rule_types.copy()
+            
+        current_section = None
+        temp_rules = {
+            'reject_rules': set(),
+            'response_rules': set(),
+            'script_rules': set(),
+            'other_rules': set()
+        }
+        
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+                
+            section = self._detect_section(line)
+            if section:
+                current_section = section
+                continue
+                
+            # 根据规则类型分类存储
+            if 'script-response-body' in line or 'script-request-body' in line:
+                temp_rules['script_rules'].add(line)
+            elif 'reject' in line:
+                temp_rules['reject_rules'].add(line)
+            elif 'response-body' in line or 'random-response' in line:
+                temp_rules['response_rules'].add(line)
+            else:
+                temp_rules['other_rules'].add(line)
+
+        # 分别处理不同类型的规则
+        processed_reject_rules = self._process_reject_rules(temp_rules['reject_rules'])
+        processed_response_rules = self._process_response_rules(temp_rules['response_rules'])
+        processed_script_rules = self._process_script_rules(temp_rules['script_rules'])
+        
+        # 合并处理后的规则
+        self.rule_types['rewrite'].update(processed_reject_rules)
+        self.rule_types['rewrite'].update(processed_response_rules)
+        self.rule_types['rewrite'].update(processed_script_rules)
+        self.rule_types['rewrite'].update(temp_rules['other_rules'])
+        
+        return self.rule_types
 
     def _detect_section(self, line: str) -> str:
-        """检测规则所属段落(不区分大小写)"""
+        """检测规则所属段落"""
         line_lower = line.lower()
         
         section_markers = {
@@ -93,56 +232,6 @@ class RuleProcessor:
             if any(line_lower.startswith(marker) for marker in markers):
                 return section
         return None
-
-    def process_rules(self, content: str) -> Dict[str, Set[str]]:
-        """处理规则内容"""
-        if not content:
-            return self.rule_types.copy()
-            
-        current_section = None
-        
-        for line in content.splitlines():
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-                
-            section = self._detect_section(line)
-            if section:
-                current_section = section
-                continue
-                
-            if current_section:
-                self._process_line(line, current_section)
-            else:
-                self._process_unmarked_line(line)
-                
-        return self.rule_types
-
-    def _process_line(self, line: str, section: str):
-        """处理有section标记的规则"""
-        if section == 'mitm' and 'hostname' in line.lower():
-            self._process_hostname(line, self.rule_types)
-        else:
-            self.rule_types[section].add(line)
-
-    def _process_unmarked_line(self, line: str):
-        """处理未标记section的规则(不区分大小写)"""
-        line_lower = line.lower()
-        
-        if 'hostname' in line_lower:
-            self._process_hostname(line, self.rule_types)
-        elif any(pattern.lower() in line_lower for pattern in ['DOMAIN-SUFFIX', 'DOMAIN']):
-            self.rule_types['domain_suffix'].add(line)
-        elif 'ip-cidr' in line_lower:
-            self.rule_types['ip_cidr'].add(line)
-        elif 'ssid' in line_lower:
-            self.rule_types['ssid_setting'].add(line)
-        elif any(pattern.lower() in line_lower for pattern in ['url script', 'url reject', '^']):
-            self.rule_types['rewrite'].add(line)
-        elif '.js' in line_lower or 'script-path' in line_lower:
-            self.rule_types['script'].add(line)
-        elif any(pattern.lower() in line_lower for pattern in ['url 302', 'url 307']):
-            self.rule_types['url_rewrite'].add(line)
 
     def _process_hostname(self, line: str, rules: Dict[str, Set[str]]):
         """处理hostname规则"""
@@ -178,13 +267,33 @@ class RuleProcessor:
         
         final_hostnames = sorted(wildcards | final_specific)
         return ','.join(final_hostnames)
-    
+
     def _is_covered_by_wildcard(self, hostname: str, wildcard: str) -> bool:
         """检查域名是否被通配符覆盖"""
         if not wildcard.startswith('*'):
             return False
         domain_suffix = wildcard[1:]
         return hostname.endswith(domain_suffix)
+
+    def download_rule(self, name: str, url: str) -> tuple:
+        """下载规则源"""
+        try:
+            response = requests.get(url, timeout=self.config.TIMEOUT)
+            response.raise_for_status()
+            content = response.text
+            return name, content
+        except Exception as e:
+            print(f"Error downloading {name}: {e}")
+            return name, None
+
+    def merge_rules(self) -> Dict[str, Set[str]]:
+        """合并所有规则"""
+        for name, url in self.config.REWRITE_SOURCES.items():
+            print(f"Downloading {name}...")
+            _, content = self.download_rule(name, url)
+            if content:
+                self.process_rules(content)
+        return self.rule_types
 
     def generate_output(self, rules: Dict[str, Set[str]]) -> str:
         """生成最终的规则文件"""
@@ -232,20 +341,6 @@ class RuleProcessor:
             ])
 
         return '\n'.join(content)
-
-    def merge_rules(self) -> Dict[str, Set[str]]:
-        """合并所有规则"""
-        merged_rules = self.rule_types.copy()
-        
-        for name, url in self.config.REWRITE_SOURCES.items():
-            print(f"Downloading {name}...")
-            _, content = self.download_rule(name, url)
-            if content:
-                rules = self.process_rules(content)
-                for key in merged_rules:
-                    merged_rules[key].update(rules[key])
-        
-        return merged_rules
 
     def update_readme(self, rules: Dict[str, Set[str]]):
         """更新README文件"""
