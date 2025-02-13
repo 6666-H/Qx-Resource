@@ -56,6 +56,26 @@ class RuleProcessor:
                 logging.StreamHandler()
             ]
         )
+
+    def download_rule(self, name: str, url: str) -> tuple:
+        """下载单个规则源"""
+        try:
+            response = requests.get(url, timeout=self.config.TIMEOUT)
+            response.raise_for_status()
+            content = response.text
+            
+            # 验证下载的内容
+            if not content or len(content.strip()) == 0:
+                logging.warning(f"Empty content downloaded from {url}")
+                return name, None
+                
+            return name, content
+        except requests.RequestException as e:
+            logging.error(f"Error downloading {name} from {url}: {str(e)}")
+            return name, None
+        except Exception as e:
+            logging.error(f"Unexpected error while downloading {name}: {str(e)}")
+            return name, None
     
     def clean_rule(self, rule: str) -> str:
         """清理和标准化规则"""
@@ -202,6 +222,21 @@ class RuleProcessor:
         
         return '\n'.join(content)
 
+    def _generate_header(self, time):
+        """生成规则文件头部"""
+        return f"""#!name = 自建重写规则合集
+#!desc = 自建重写规则合集     
+# 更新时间：{time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+# 合并自以下源：
+{chr(10).join([f'# {name}: {url}' for name, url in self.config.REWRITE_SOURCES.items()])}
+"""
+
+    def get_beijing_time(self):
+        """获取北京时间"""
+        utc_now = datetime.datetime.utcnow()
+        beijing_time = utc_now + timedelta(hours=8)
+        return beijing_time
+
     def validate_output(self, content: str) -> bool:
         """验证输出内容的有效性"""
         required_sections = ['[REWRITE]', '[MITM]', '[SCRIPT]']
@@ -211,7 +246,26 @@ class RuleProcessor:
                 return False
         return True
 
-    # 其他方法保持不变...
+    def update_readme(self, rules: Dict[str, Set[str]]):
+        """更新 README 文件"""
+        beijing_time = self.get_beijing_time()
+        content = f"""# 自建重写规则合集
+
+## 更新时间
+{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+
+## 规则说明
+本重写规则集合并自各个开源规则，去除重复规则。
+- 重写规则数量：{len(rules['rewrite'])}
+- 主机名数量：{len(rules['host'])}
+- 脚本数量：{len(rules['script'])}
+
+## 规则来源
+{chr(10).join([f'- {name}: {url}' for name, url in self.config.REWRITE_SOURCES.items()])}
+"""
+        
+        with open(os.path.join(self.config.REPO_PATH, self.config.README_PATH), 'w', encoding='utf-8') as f:
+            f.write(content)
 
 def main():
     config = Config()
