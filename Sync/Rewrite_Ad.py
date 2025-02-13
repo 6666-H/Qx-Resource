@@ -37,7 +37,8 @@ README_PATH = "README_Rewrite.md"
 #     "Google搜索重定向": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Google%E9%87%8D%E5%AE%9A%E5%90%91.sgmodule",
 #     "京东比价": "https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js",
 #     "汤头条解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/lsp/Tangtoutiao.js",
-#     "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js"
+#     "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js",
+#     "TF多账号合并":"https://raw.githubusercontent.com/NobyDa/Script/master/Surge/Module/TestFlightAccount.sgmodule"
 # }
 REWRITE_SOURCES = {
     "阻止常见的 HTTPDNS 服务器": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule",
@@ -58,8 +59,7 @@ REWRITE_SOURCES = {
     "Google搜索重定向":"https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Google%E9%87%8D%E5%AE%9A%E5%90%91.sgmodule",
     "网易云音乐去广告": "https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule",
     "京东比价": "https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js",
-    "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js",
-    "TF多账号合并":"https://raw.githubusercontent.com/NobyDa/Script/master/Surge/Module/TestFlightAccount.sgmodule"
+    "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js"
 }
 
 def get_beijing_time():
