@@ -50,14 +50,13 @@ class RuleProcessor:
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
-        rules = {}
+        rules = {'rule': set()}  # 默认创建 'rule' 标签用于存储无标签规则
         
         if not content:
             return rules
             
-        current_section = None
+        current_section = 'rule'  # 默认使用 'rule' 标签
         
-        # 首先识别所有标签和收集规则
         for line in content.splitlines():
             line = line.strip()
             if not line or line.startswith('#'):
@@ -70,16 +69,17 @@ class RuleProcessor:
                     rules[current_section] = set()
                 continue
                 
-            # 如果有当前标签，则添加到对应集合
-            if current_section and line:
-                rules[current_section].add(line)
-                    
             # 特殊处理 hostname
             if 'hostname' in line.lower():
                 if 'host' not in rules:
                     rules['host'] = set()
                 self._process_hostname(line, rules)
-                
+                continue
+            
+            # 将规则添加到当前标签下
+            if current_section and line:
+                rules[current_section].add(line)
+                    
         return rules
 
     def _process_hostname(self, line: str, rules: Dict[str, Set[str]]):
