@@ -2,7 +2,7 @@ import os
 import requests
 import datetime
 from datetime import timedelta
-from typing import Dict, Set, List, Tuple
+from typing import Dict, Set, List
 
 class Config:
     def __init__(self):
@@ -44,7 +44,7 @@ class RuleProcessor:
             'reject': 1
         }
 
-    def download_rule(self, name: str, url: str) -> Tuple[str, str]:
+    def download_rule(self, name: str, url: str) -> tuple:
         """下载规则源"""
         try:
             response = requests.get(url, timeout=self.config.TIMEOUT)
@@ -55,7 +55,7 @@ class RuleProcessor:
             print(f"Error downloading {name}: {e}")
             return name, None
 
-    def normalize_rule(self, rule: str) -> Tuple[str, str, str]:
+    def normalize_rule(self, rule: str) -> tuple:
         """解析规则，返回 (URL模式, 动作, 完整规则)"""
         if ' = type=' in rule:  # Surge格式
             try:
@@ -79,9 +79,13 @@ class RuleProcessor:
                 return None
         else:  # QuantumultX格式
             parts = rule.strip().split()
-            if len(parts) >= 3:
-                return (parts[0], parts[2], rule)
-        return None
+            if len(parts) < 3:
+                return None
+            
+            url_pattern = parts[0]
+            action = parts[2]
+            
+            return (url_pattern, action, rule)
 
     def get_action_priority(self, action: str) -> int:
         """获取动作的优先级"""
@@ -89,102 +93,73 @@ class RuleProcessor:
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
-        temp_rules = {
-            'url-rewrite': [],  # 使用列表存储未处理的规则
-            'script': [],
-            'host': set()
-        }
+        rules = {'url-rewrite': set(), 'script': set()}
+        url_rules = {}  # 用于存储URL模式及其对应的规则
         
         if not content:
-            return {k: set() for k in temp_rules.keys()}
+            return rules
+            
+        current_section = 'url-rewrite'
         
-        # 首先处理内容,仅移除以//开头的注释行
-        lines = []
         for line in content.splitlines():
             line = line.strip()
             if not line:
                 continue
                 
-            # 仅跳过以//开头的注释行    
-            if line.startswith('//'):
-                continue
-                
-            # 处理特殊的 hostname 行
-            if line.startswith('#>'):
-                hostname_line = line[2:].strip()
-                if hostname_line:
-                    for hostname in hostname_line.split(','):
-                        hostname = hostname.strip()
-                        if hostname:
-                            temp_rules['host'].add(hostname)
-                continue
-                
-            # 跳过其他注释行
+            # 处理注释和Surge格式的hostname
             if line.startswith('#'):
+                if line.startswith('#>'):
+                    if 'host' not in rules:
+                        rules['host'] = set()
+                    hostnames = line[2:].strip().split(',')
+                    for hostname in hostnames:
+                        hostname = hostname.strip()
+                        if hostname and not hostname.startswith('//'):  # 忽略注释
+                            rules['host'].add(hostname)
                 continue
-            
-            lines.append(line)
-        
-        # 处理剩余的有效行
-        current_section = 'url-rewrite'
-        for line in lines:
+                
             # 检查是否是标签行
             if line.startswith('[') and line.endswith(']'):
                 current_section = line[1:-1].lower()
+                if current_section not in rules:
+                    rules[current_section] = set()
                 continue
                 
             # 处理常规hostname
             if 'hostname' in line.lower():
-                self._process_hostname(line, temp_rules)
+                if 'host' not in rules:
+                    rules['host'] = set()
+                self._process_hostname(line, rules)
                 continue
             
             # 处理规则
             parsed = self.normalize_rule(line)
-            if not parsed:
-                continue
+            if parsed:
+                url_pattern, action, full_rule = parsed
                 
-            url_pattern, action, full_rule = parsed
-            
-            # 根据规则类型分类存储
-            if action.startswith('script'):
-                temp_rules['script'].append((url_pattern, action, full_rule))
-            else:
-                temp_rules['url-rewrite'].append((url_pattern, action, full_rule))
-        
-        # 处理完所有规则后，进行优先级处理和去重
-        final_rules = {
-            'url-rewrite': set(),
-            'script': set(),
-            'host': temp_rules['host']
-        }
-        
-        # 处理 URL rewrite 规则
-        url_rules = {}  # 用于存储URL模式及其对应的规则
-        for url_pattern, action, full_rule in temp_rules['url-rewrite']:
-            if action.startswith('reject'):
-                # reject类规则使用优先级处理
-                current_priority = self.get_action_priority(action)
-                if url_pattern in url_rules:
-                    existing_rule, existing_action = url_rules[url_pattern]
-                    existing_priority = self.get_action_priority(existing_action)
-                    if current_priority > existing_priority:
+                if action.startswith('reject'):
+                    # reject类规则使用优先级处理
+                    current_priority = self.get_action_priority(action)
+                    if url_pattern in url_rules:
+                        existing_rule, existing_action = url_rules[url_pattern]
+                        existing_priority = self.get_action_priority(existing_action)
+                        if current_priority > existing_priority:
+                            url_rules[url_pattern] = (full_rule, action)
+                    else:
                         url_rules[url_pattern] = (full_rule, action)
+                elif action.startswith('script'):
+                    # 脚本类规则全部保留
+                    rules['script'].add(full_rule)
                 else:
-                    url_rules[url_pattern] = (full_rule, action)
-            else:
-                # 其他类型规则只保留第一个
-                if url_pattern not in url_rules:
-                    url_rules[url_pattern] = (full_rule, action)
+                    # 其他类型规则只保留第一个
+                    if url_pattern not in url_rules:
+                        url_rules[url_pattern] = (full_rule, action)
         
-        # 添加处理后的URL rewrite规则
+        # 将reject类规则添加到最终结果
         for _, (full_rule, _) in url_rules.items():
-            final_rules['url-rewrite'].add(full_rule)
-        
-        # 处理脚本规则
-        for _, _, full_rule in temp_rules['script']:
-            final_rules['script'].add(full_rule)
-        
-        return final_rules
+            rules['url-rewrite'].add(full_rule)
+                    
+        return rules
 
     def _process_hostname(self, line: str, rules: Dict[str, Set[str]]):
         """处理hostname规则"""
@@ -198,7 +173,10 @@ class RuleProcessor:
 
     def deduplicate_hostnames(self, hostnames: Set[str]) -> str:
         """去重和排序hostname"""
+        # 转换为list并排序
         hostname_list = sorted(hostnames)
+        
+        # 处理通配符域名
         wildcards = set()
         specific = set()
         
@@ -208,6 +186,7 @@ class RuleProcessor:
             else:
                 specific.add(hostname)
         
+        # 移除被通配符覆盖的具体域名
         final_specific = set()
         for hostname in specific:
             should_keep = True
@@ -218,6 +197,7 @@ class RuleProcessor:
             if should_keep:
                 final_specific.add(hostname)
         
+        # 合并结果
         final_hostnames = sorted(wildcards | final_specific)
         return ','.join(final_hostnames)
     
@@ -232,11 +212,13 @@ class RuleProcessor:
         """合并所有规则"""
         merged_rules = {}
         
+        # 下载和处理所有规则
         for name, url in self.config.REWRITE_SOURCES.items():
             print(f"Downloading {name}...")
             _, content = self.download_rule(name, url)
             if content:
                 rules = self.process_rules(content)
+                # 确保所有遇到的标签类型都在merged_rules中存在
                 for key in rules:
                     if key not in merged_rules:
                         merged_rules[key] = set()
@@ -257,6 +239,7 @@ class RuleProcessor:
             ""
         ]
         
+        # 首先处理 Script 规则
         if 'script' in rules and rules['script']:
             content.extend([
                 "[Script]",
@@ -264,6 +247,7 @@ class RuleProcessor:
                 ""
             ])
 
+        # 然后处理 URL Rewrite 规则
         if 'url-rewrite' in rules and rules['url-rewrite']:
             content.extend([
                 "[URL Rewrite]",
@@ -271,6 +255,7 @@ class RuleProcessor:
                 ""
             ])
         
+        # 最后处理 MITM 规则
         if 'host' in rules and rules['host']:
             content.extend([
                 "[MITM]",
@@ -284,6 +269,7 @@ class RuleProcessor:
         """更新README文件"""
         beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
         
+        # 生成规则统计信息
         rule_counts = []
         for section, rules_set in rules.items():
             rule_counts.append(f"- {section.title()} 规则数量：{len(rules_set)}")
@@ -310,15 +296,23 @@ def main():
     processor = RuleProcessor(config)
     
     try:
+        # 创建输出目录
         os.makedirs(os.path.join(config.REPO_PATH, config.REWRITE_DIR), exist_ok=True)
+        
+        # 合并规则
         rules = processor.merge_rules()
+        
+        # 生成输出文件
         output = processor.generate_output(rules)
         
+        # 写入文件
         output_path = os.path.join(config.REPO_PATH, config.REWRITE_DIR, config.OUTPUT_FILE)
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(output)
             
+        # 更新 README
         processor.update_readme(rules)
+        
         print("Successfully generated rules and README")
         
     except Exception as e:
