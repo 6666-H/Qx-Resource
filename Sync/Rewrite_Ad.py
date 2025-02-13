@@ -36,6 +36,14 @@ class Config:
 class RuleProcessor:
     def __init__(self, config):
         self.config = config
+        # 只定义 reject 相关规则的优先级
+        self.RULE_PRIORITY = {
+            'reject-dict': 1,
+            'reject-array': 2,
+            'reject-200': 3,
+            'reject-img': 4,
+            'reject': 5
+        }
         
     def download_rule(self, name: str, url: str) -> tuple:
         """下载规则源"""
@@ -47,6 +55,55 @@ class RuleProcessor:
         except Exception as e:
             print(f"Error downloading {name}: {e}")
             return name, None
+
+    def _get_rule_type(self, rule: str) -> str:
+        """获取规则的类型，只处理 reject 相关规则"""
+        if not 'reject' in rule:  # 如果不包含 reject，直接返回 other
+            return 'other'
+        
+        for rule_type in self.RULE_PRIORITY.keys():
+            if rule_type in rule:
+                return rule_type
+        return 'other'
+
+    def _sort_rules(self, rules: Set[str]) -> List[str]:
+        """根据优先级对规则进行排序"""
+        # 创建规则分组字典
+        reject_rules = []
+        other_rules = []
+        
+        # 将规则分为 reject 和非 reject 两类
+        for rule in rules:
+            rule_type = self._get_rule_type(rule)
+            if rule_type in self.RULE_PRIORITY:
+                reject_rules.append((rule_type, rule))
+            else:
+                other_rules.append(rule)
+
+        # 处理 reject 规则
+        # 按URL分组存储规则
+        url_rules = {}
+        for rule_type, rule in reject_rules:
+            url = rule.split()[0]
+            if url not in url_rules:
+                url_rules[url] = []
+            url_rules[url].append((rule_type, rule))
+
+        # 对每个URL只保留优先级最高的规则
+        final_reject_rules = []
+        for url, rules_list in url_rules.items():
+            # 按优先级排序，取优先级最高的规则
+            best_rule = min(rules_list, key=lambda x: self.RULE_PRIORITY[x[0]])[1]
+            final_reject_rules.append(best_rule)
+
+        # 对 reject 规则按URL排序
+        final_reject_rules.sort(key=lambda x: x.split()[0])
+        
+        # 其他规则保持原样
+        other_rules.sort()
+
+        # 返回排序后的规则，reject 规则在前
+        return final_reject_rules + other_rules
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
@@ -174,7 +231,7 @@ class RuleProcessor:
                     section_name = section.upper()  # 转换为大写作为标题
                     content.extend([
                         f"[{section_name}]",
-                        *sorted(rules_set),
+                        *self._sort_rules(rules_set),  # 使用新的排序方法
                         ""
                     ])
         
