@@ -1,13 +1,13 @@
 # 自建重写规则合集
 
 ## 更新时间
-2025-02-13 19:11:15 (北京时间)
+2025-02-13 19:30:19 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
-- 重写规则数量：3214
-- 主机名数量：1356
-- 脚本数量：147
+- 重写规则数量：4084
+- 主机名数量：0
+- 脚本数量：0
 
 ## 规则来源
 - 阻止常见的 HTTPDNS 服务器: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule
