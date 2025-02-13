@@ -40,204 +40,103 @@ class RuleProcessor:
     def __init__(self, config):
         self.config = config
         self.rule_types = {
-            'general': set(),      
-            'rule': set(),         
-            'rewrite': set(),      
-            'url_rewrite': set(),  
-            'header_rewrite': set(), 
-            'script': set(),       
-            'host': set(),         
-            'mitm': set(),         
-            'panel': set(),        
-            'map_local': set(),    
-            'url_regex': set(),    
-            'domain_suffix': set(), 
-            'ip_cidr': set(),      
-            'ssid_setting': set(), 
-            'filter': set(),       
-            'dns': set(),          
-            'policy': set()        
+            'rewrite': set(),
+            'host': set()
         }
 
-    def _process_reject_rules(self, rules: Set[str]) -> Set[str]:
-        """处理reject规则的优先级"""
-        url_rules = {}
-        
-        priorities = {
-            'reject-dict': 3,
-            'reject-array': 3,
-            'reject-200': 2,
-            'reject-img': 2,
-            'reject': 1
-        }
-
-        for rule in rules:
+    def _validate_rule(self, rule: str) -> bool:
+        """验证规则格式是否正确"""
+        if not rule or rule.startswith('#'):
+            return False
+            
+        # 验证重写规则格式
+        if 'http-request' in rule or 'http-response' in rule:
             try:
-                url_pattern = rule.split('url')[0].strip()
-                action = rule.split('url')[1].strip()
-
-                current_priority = 0
-                for action_type, priority in priorities.items():
-                    if action_type in action:
-                        current_priority = priority
-                        break
-
-                if url_pattern in url_rules:
-                    existing_action = url_rules[url_pattern].split('url')[1].strip()
-                    existing_priority = 0
-                    for action_type, priority in priorities.items():
-                        if action_type in existing_action:
-                            existing_priority = priority
-                            break
-                    
-                    if current_priority > existing_priority:
-                        url_rules[url_pattern] = rule
-                else:
-                    url_rules[url_pattern] = rule
-
-            except Exception as e:
-                print(f"Error processing rule: {rule}")
-                continue
-
-        return set(url_rules.values())
-
-    def _process_response_rules(self, rules: Set[str]) -> Set[str]:
-        """处理response规则的优先级"""
-        url_rules = {}
-        
-        priorities = {
-            'random-response': 2,
-            'response-body': 1
-        }
-
-        for rule in rules:
-            try:
-                url_pattern = rule.split('url')[0].strip()
-                action = rule.split('url')[1].strip()
-
-                current_priority = 0
-                for action_type, priority in priorities.items():
-                    if action_type in action:
-                        current_priority = priority
-                        break
-
-                if url_pattern in url_rules:
-                    existing_action = url_rules[url_pattern].split('url')[1].strip()
-                    existing_priority = 0
-                    for action_type, priority in priorities.items():
-                        if action_type in existing_action:
-                            existing_priority = priority
-                            break
-                    
-                    if current_priority > existing_priority:
-                        url_rules[url_pattern] = rule
-                else:
-                    url_rules[url_pattern] = rule
-
-            except Exception as e:
-                print(f"Error processing rule: {rule}")
-                continue
-
-        return set(url_rules.values())
-
-    def _process_script_rules(self, rules: Set[str]) -> Set[str]:
-        """处理脚本规则，保留第一个遇到的规则"""
-        url_rules = {}
-        
-        for rule in rules:
-            try:
-                parts = rule.split('url')
-                if len(parts) != 2:
-                    continue
-                    
-                url_pattern = parts[0].strip()
+                parts = rule.split(',')
+                if len(parts) < 2:
+                    return False
+            except:
+                return False
                 
-                if url_pattern not in url_rules:
-                    url_rules[url_pattern] = rule
+        return True
 
-            except Exception as e:
-                print(f"Error processing script rule: {rule}")
-                continue
-
-        return set(url_rules.values())
-
-    def _process_request_rules(self, rules: Set[str]) -> Set[str]:
-        """处理http-request类规则,保持原格式不变"""
-        return rules
+    def _convert_rule_format(self, rule: str) -> str:
+        """转换不同格式的规则到统一格式"""
+        # Surge/Loon格式转换
+        if rule.startswith('http-') and ' requires-body=true' in rule:
+            parts = rule.split(',')
+            new_parts = []
+            for part in parts:
+                part = part.strip()
+                if part.startswith('pattern='):
+                    new_parts.insert(0, part.replace('pattern=', ''))
+                elif part.startswith('script-path='):
+                    new_parts.append(part)
+                elif part.startswith('tag='):
+                    new_parts.append(part)
+            return ', '.join(new_parts)
+            
+        return rule
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
         if not content:
             return self.rule_types.copy()
             
+        lines = content.splitlines()
         current_section = None
-        temp_rules = {
-            'reject_rules': set(),
-            'response_rules': set(),
-            'script_rules': set(),
-            'request_rules': set(),
-            'other_rules': set()
-        }
         
-        for line in content.splitlines():
-            line = line.strip()
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # 跳过注释和空行
             if not line or line.startswith('#') or line.startswith('/*') or line.startswith('*/'):
+                i += 1
                 continue
                 
-            section = self._detect_section(line)
-            if section:
-                current_section = section
+            # 检查是否是重写规则部分
+            if '[rewrite_local]' in line.lower():
+                i += 1
+                while i < len(lines):
+                    rule = lines[i].strip()
+                    if not rule or rule.startswith('#'):
+                        i += 1
+                        continue
+                    if rule.startswith('['):
+                        break
+                    if self._validate_rule(rule):
+                        rule = self._convert_rule_format(rule)
+                        self.rule_types['rewrite'].add(rule)
+                    i += 1
                 continue
                 
-            if 'http-request' in line:
-                temp_rules['request_rules'].add(line)
-            elif 'script-response-body' in line or 'script-request-body' in line:
-                temp_rules['script_rules'].add(line)
-            elif 'reject' in line:
-                temp_rules['reject_rules'].add(line)
-            elif 'response-body' in line or 'random-response' in line:
-                temp_rules['response_rules'].add(line)
-            else:
-                temp_rules['other_rules'].add(line)
-
-        processed_reject_rules = self._process_reject_rules(temp_rules['reject_rules'])
-        processed_response_rules = self._process_response_rules(temp_rules['response_rules'])
-        processed_script_rules = self._process_script_rules(temp_rules['script_rules'])
-        processed_request_rules = self._process_request_rules(temp_rules['request_rules'])
-        
-        self.rule_types['rewrite'].update(processed_reject_rules)
-        self.rule_types['rewrite'].update(processed_response_rules)
-        self.rule_types['rewrite'].update(processed_script_rules)
-        self.rule_types['rewrite'].update(processed_request_rules)
-        self.rule_types['rewrite'].update(temp_rules['other_rules'])
-        
+            # 检查是否是MITM部分
+            if '[mitm]' in line.lower():
+                i += 1
+                while i < len(lines):
+                    rule = lines[i].strip()
+                    if not rule or rule.startswith('#'):
+                        i += 1
+                        continue
+                    if rule.startswith('['):
+                        break
+                    if 'hostname' in rule:
+                        self._process_hostname(rule)
+                    i += 1
+                continue
+                
+            # 检查是否是完整规则
+            if ('http-request' in line or 'http-response' in line or 'reject' in line) and not line.startswith('['):
+                if self._validate_rule(line):
+                    rule = self._convert_rule_format(line)
+                    self.rule_types['rewrite'].add(rule)
+                
+            i += 1
+                
         return self.rule_types
 
-    def _detect_section(self, line: str) -> str:
-        """检测规则所属段落"""
-        line_lower = line.lower()
-        
-        section_markers = {
-            'general': ['[general]'],
-            'rule': ['[rule]'],
-            'rewrite': ['[rewrite]', '[rewrite_local]'],
-            'url_rewrite': ['[url rewrite]', '[url_rewrite]'],
-            'header_rewrite': ['[header rewrite]', '[header_rewrite]'],
-            'script': ['[script]'],
-            'mitm': ['[mitm]'],
-            'panel': ['[panel]'],
-            'map_local': ['[map local]', '[map_local]'],
-            'filter': ['[filter]'],
-            'dns': ['[dns]'],
-            'policy': ['[policy]']
-        }
-        
-        for section, markers in section_markers.items():
-            if any(line_lower.startswith(marker) for marker in markers):
-                return section
-        return None
-
-    def _process_hostname(self, line: str, rules: Dict[str, Set[str]]):
+    def _process_hostname(self, line: str):
         """处理hostname规则"""
         if '=' in line:
             hostnames = line.split('=')[1].strip()
@@ -245,7 +144,7 @@ class RuleProcessor:
             for hostname in hostnames.split(','):
                 hostname = hostname.strip()
                 if hostname and not hostname.startswith('#'):
-                    rules['host'].add(hostname)
+                    self.rule_types['host'].add(hostname)
 
     def deduplicate_hostnames(self, hostnames: Set[str]) -> str:
         """去重和排序hostname"""
@@ -301,49 +200,46 @@ class RuleProcessor:
 
     def generate_output(self, rules: Dict[str, Set[str]]) -> str:
         """生成最终的规则文件"""
-        beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
+        # 对规则进行分类
+        rewrite_rules = {
+            'request': set(),
+            'response': set(),
+            'reject': set(),
+            'other': set()
+        }
         
-        content = [
-            f"#!name = 自建重写规则合集",
-            f"#!desc = 自建重写规则合集",
-            f"# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)",
-            "# 合并自以下源：",
-            *[f"# {name}: {url}" for name, url in self.config.REWRITE_SOURCES.items()],
-            ""
-        ]
-
-        sections = [
-            ('GENERAL', 'general'),
-            ('RULE', 'rule'),
-            ('REWRITE', 'rewrite'),
-            ('URL-REWRITE', 'url_rewrite'),
-            ('HEADER-REWRITE', 'header_rewrite'),
-            ('SCRIPT', 'script'),
-            ('PANEL', 'panel'),
-            ('MAP-LOCAL', 'map_local'),
-            ('DOMAIN-SUFFIX', 'domain_suffix'),
-            ('IP-CIDR', 'ip_cidr'),
-            ('SSID-SETTING', 'ssid_setting'),
-            ('FILTER', 'filter'),
-            ('DNS', 'dns'),
-            ('POLICY', 'policy')
-        ]
-
-        for section_name, section_key in sections:
-            if rules[section_key]:
-                content.extend([
-                    f"[{section_name}]",
-                    *sorted(rules[section_key]),
-                    ""
-                ])
-
+        for rule in rules['rewrite']:
+            if 'http-request' in rule:
+                rewrite_rules['request'].add(rule)
+            elif 'http-response' in rule:
+                rewrite_rules['response'].add(rule)
+            elif 'reject' in rule:
+                rewrite_rules['reject'].add(rule)
+            else:
+                rewrite_rules['other'].add(rule)
+        
+        content = ["[rewrite_local]"]
+        
+        # 按照类型添加规则
+        if rewrite_rules['request']:
+            content.extend(sorted(rewrite_rules['request']))
+        if rewrite_rules['response']:
+            content.extend(sorted(rewrite_rules['response']))
+        if rewrite_rules['reject']:
+            content.extend(sorted(rewrite_rules['reject']))
+        if rewrite_rules['other']:
+            content.extend(sorted(rewrite_rules['other']))
+        
+        content.append("")
+        
+        # 添加MITM配置
         if rules['host']:
             content.extend([
-                "[MITM]",
+                "[mitm]",
                 f"hostname = {self.deduplicate_hostnames(rules['host'])}",
                 ""
             ])
-
+        
         return '\n'.join(content)
 
     def update_readme(self, rules: Dict[str, Set[str]]):
@@ -359,7 +255,6 @@ class RuleProcessor:
 本重写规则集合并自各个开源规则，去除重复规则。
 - 重写规则数量：{len(rules['rewrite'])}
 - 主机名数量：{len(rules['host'])}
-- 脚本数量：{len(rules['script'])}
 
 ## 规则来源
 {chr(10).join([f'- {name}: {url}' for name, url in self.config.REWRITE_SOURCES.items()])}
