@@ -104,7 +104,7 @@ class RuleProcessor:
         return False
 
     def deduplicate_rules(self, rules: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
-        """去除重复规则"""
+        """去除重复规则并根据优先级保留规则"""
         result = {
             'rewrite': set(),
             'mitm': set(),
@@ -112,11 +112,40 @@ class RuleProcessor:
             'script': set()
         }
         
+        # 创建临时字典存储URL模式和对应的规则
+        url_pattern_rules = {}
+        
+        # 定义reject类型的优先级
+        reject_priority = {
+            'reject-dict': 3,
+            'reject-200': 2,
+            'reject': 1
+        }
+
         # 对重写规则进行去重和合并
         for rule in rules['rewrite']:
             normalized_rule = self.clean_rule(rule)
-            if self.is_valid_rule(normalized_rule):
+            if not self.is_valid_rule(normalized_rule):
+                continue
+                
+            # 提取URL模式和reject类型
+            pattern_match = re.match(r'^(.*?)\s+url\s+(reject(?:-dict|-200)?)', normalized_rule)
+            if pattern_match:
+                url_pattern = pattern_match.group(1)
+                reject_type = pattern_match.group(2)
+                
+                # 如果URL模式已存在，比较优先级
+                if url_pattern in url_pattern_rules:
+                    existing_reject_type = re.search(r'reject(?:-dict|-200)?', url_pattern_rules[url_pattern]).group(0)
+                    if reject_priority.get(reject_type, 0) > reject_priority.get(existing_reject_type, 0):
+                        url_pattern_rules[url_pattern] = normalized_rule
+                else:
+                    url_pattern_rules[url_pattern] = normalized_rule
+            else:
                 result['rewrite'].add(normalized_rule)
+        
+        # 将处理后的规则添加到结果集
+        result['rewrite'].update(url_pattern_rules.values())
         
         # 对主机名进行去重和标准化
         for host in rules['host']:
