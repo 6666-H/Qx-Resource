@@ -52,6 +52,14 @@ def normalize_rule(rule):
     url_pattern = parts[0].strip()
     return url_pattern
 
+def normalize_script_rule(rule):
+    """标准化脚本规则，提取URL匹配模式"""
+    if 'url script-' not in rule:
+        return rule
+    parts = rule.split('url script-')
+    url_pattern = parts[0].strip()
+    return url_pattern
+
 def get_best_reject_type(rules):
     """从多个相同URL pattern的规则中选择最佳的reject类型"""
     reject_priority = {
@@ -97,6 +105,17 @@ def merge_duplicate_rules(rules):
             merged_rules.add(rule_set.pop())
     
     return merged_rules
+
+def merge_script_rules(scripts):
+    """合并重复的脚本规则，保留第一个出现的规则"""
+    script_dict = {}
+    for script in scripts:
+        url_pattern = normalize_script_rule(script)
+        # 只保存第一个遇到的脚本规则
+        if url_pattern not in script_dict:
+            script_dict[url_pattern] = script
+    
+    return set(script_dict.values())
 
 def download_and_merge_rules():
     """下载并合并重写规则"""
@@ -147,7 +166,7 @@ def download_and_merge_rules():
                     continue
 
                 # 处理脚本规则
-                if current_tag == 'SCRIPT' or line.endswith('.js'):
+                if 'url script-' in line:
                     all_scripts.add(line)
                     continue
 
@@ -163,6 +182,8 @@ def download_and_merge_rules():
 
     # 合并重复规则
     merged_rules = merge_duplicate_rules(all_rules)
+    # 合并重复脚本规则
+    merged_scripts = merge_script_rules(all_scripts)
 
     # 组合最终内容
     final_content = header
@@ -178,10 +199,10 @@ def download_and_merge_rules():
         final_content += "\n[REWRITE]\n"
         final_content += '\n'.join(sorted(merged_rules)) + '\n'
 
-    # 输出脚本规则
-    if all_scripts:
+    # 输出合并后的脚本规则
+    if merged_scripts:
         final_content += "\n[SCRIPT]\n"
-        final_content += '\n'.join(sorted(all_scripts)) + '\n'
+        final_content += '\n'.join(sorted(merged_scripts)) + '\n'
 
     # 输出合并后的所有 hostname
     if all_hostnames:
@@ -195,7 +216,7 @@ def download_and_merge_rules():
 
     rule_count = len(merged_rules)
     hostname_count = len(all_hostnames)
-    script_count = len(all_scripts)
+    script_count = len(merged_scripts)
     print(f"Successfully merged {rule_count} unique rules, {hostname_count} hostnames, and {script_count} scripts to {OUTPUT_FILE}")
     return rule_count, hostname_count, script_count
 
