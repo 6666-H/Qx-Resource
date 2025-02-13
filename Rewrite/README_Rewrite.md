@@ -1,12 +1,12 @@
 #!name = 自建重写规则合集
 
 ## 更新时间
-2025-02-13 10:45:24 (北京时间)
+2025-02-13 10:47:30 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
 - 当前规则数量：2498
-- 当前 hostname 数量：1279
+- 当前 hostname 数量：1280
 - 当前 脚本 数量：274
 
 ## 规则来源
@@ -25,6 +25,7 @@
 - 小红书去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
 - 微博去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%BE%AE%E5%8D%9A%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
 - 小黑盒去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E9%BB%91%E7%9B%92%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
+- Google搜索重定向: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Google%E9%87%8D%E5%AE%9A%E5%90%91.sgmodule
 - 网易云音乐去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
 - 京东比价: https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js
 - 1998解锁: https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js
