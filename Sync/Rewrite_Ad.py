@@ -98,18 +98,15 @@ class RuleProcessor:
         if not content:
             return {k: set() for k in temp_rules.keys()}
         
-        # 首先处理内容，移除注释行
+        # 首先处理内容,仅移除以//开头的注释行
         lines = []
         for line in content.splitlines():
             line = line.strip()
             if not line:
                 continue
-            
-            # 处理行内注释
-            if '//' in line:
-                line = line[:line.index('//')].strip()
-            
-            if not line:
+                
+            # 仅跳过以//开头的注释行    
+            if line.startswith('//'):
                 continue
                 
             # 处理特殊的 hostname 行
