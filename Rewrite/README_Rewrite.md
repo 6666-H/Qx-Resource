@@ -1,13 +1,19 @@
 # 自建重写规则合集
 
 ## 更新时间
-2025-02-13 20:34:07 (北京时间)
+2025-02-13 21:18:26 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
-- 重写规则数量：4019
-- 主机名数量：0
-- 脚本数量：0
+- General 规则数量：2
+- Rule 规则数量：364
+- Url Rewrite 规则数量：60
+- Mitm 规则数量：9
+- Host 规则数量：1354
+- Body Rewrite 规则数量：21
+- Map Local 规则数量：124
+- Script 规则数量：143
+- Header Rewrite 规则数量：2
 
 ## 规则来源
 - 阻止常见的 HTTPDNS 服务器: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule
@@ -26,6 +32,3 @@
 - 微博去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%BE%AE%E5%8D%9A%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
 - 小黑盒去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E9%BB%91%E7%9B%92%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
 - 网易云音乐去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
-- 京东比价: https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js
-- 1998解锁: https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js
-- TF多账号合并: https://raw.githubusercontent.com/NobyDa/Script/master/Surge/Module/TestFlightAccount.sgmodule
