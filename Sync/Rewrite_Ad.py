@@ -113,8 +113,8 @@ def download_and_merge_rules():
     all_rules = set()
     # 用于存储所有 hostname
     all_hostnames = set()
-    # 用于存储其它脚本规则
-    other_rules = []
+    # 用于存储所有脚本规则
+    all_scripts = set()
     # 用于存储分类规则
     classified_rules = {}
 
@@ -140,20 +140,23 @@ def download_and_merge_rules():
 
                 if line.startswith('[') and line.endswith(']'):
                     current_tag = line[1:-1].upper()
-                    tag_with_brackets = f'[{current_tag}]'
-                    if tag_with_brackets not in classified_rules:
-                        classified_rules[tag_with_brackets] = set()
+                    if current_tag != 'MITM' and current_tag != 'SCRIPT':
+                        tag_with_brackets = f'[{current_tag}]'
+                        if tag_with_brackets not in classified_rules:
+                            classified_rules[tag_with_brackets] = set()
                     continue
 
-                if current_tag:
-                    if current_tag.upper() != 'MITM':
-                        classified_rules[f'[{current_tag}]'].add(line)
+                # 处理脚本规则
+                if current_tag == 'SCRIPT' or line.endswith('.js'):
+                    all_scripts.add(line)
+                    continue
+
+                if current_tag and current_tag != 'MITM' and current_tag != 'SCRIPT':
+                    classified_rules[f'[{current_tag}]'].add(line)
                     continue
 
                 if line.startswith('^'):
                     all_rules.add(line)
-                elif line.endswith('.js'):
-                    other_rules.append(line)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
@@ -166,24 +169,24 @@ def download_and_merge_rules():
 
     # 输出分类规则
     for tag, rules in classified_rules.items():
-        if rules and tag.upper() != '[MITM]':
+        if rules:
             final_content += f"\n{tag}\n"
             final_content += '\n'.join(sorted(rules)) + '\n'
-
-    # 输出合并后的所有 hostname
-    if all_hostnames:
-        final_content += "\n[MITM]\n"
-        final_content += f"hostname = {', '.join(sorted(all_hostnames))}\n"
 
     # 输出合并后的规则
     if merged_rules:
         final_content += "\n[REWRITE]\n"
         final_content += '\n'.join(sorted(merged_rules)) + '\n'
 
-    # 输出其它脚本规则
-    if other_rules:
+    # 输出脚本规则
+    if all_scripts:
         final_content += "\n[SCRIPT]\n"
-        final_content += '\n'.join(sorted(other_rules)) + '\n'
+        final_content += '\n'.join(sorted(all_scripts)) + '\n'
+
+    # 输出合并后的所有 hostname
+    if all_hostnames:
+        final_content += "\n[MITM]\n"
+        final_content += f"hostname = {', '.join(sorted(all_hostnames))}\n"
 
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, REWRITE_DIR, OUTPUT_FILE)
@@ -192,7 +195,7 @@ def download_and_merge_rules():
 
     rule_count = len(merged_rules)
     hostname_count = len(all_hostnames)
-    script_count = len(other_rules)
+    script_count = len(all_scripts)
     print(f"Successfully merged {rule_count} unique rules, {hostname_count} hostnames, and {script_count} scripts to {OUTPUT_FILE}")
     return rule_count, hostname_count, script_count
 
