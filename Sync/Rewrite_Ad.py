@@ -57,14 +57,35 @@ class RuleProcessor:
 
     def normalize_rule(self, rule: str) -> tuple:
         """解析规则，返回 (URL模式, 动作, 完整规则)"""
-        parts = rule.strip().split()
-        if len(parts) < 3:
-            return None
-        
-        url_pattern = parts[0]
-        action = parts[2]
-        
-        return (url_pattern, action, rule)
+        if ' = type=' in rule:  # Surge格式
+            try:
+                name, rule_content = rule.split(' = type=', 1)
+                parts = rule_content.split(', ')
+                rule_type = parts[0]
+                pattern = None
+                script_path = None
+                for part in parts:
+                    if part.startswith('pattern='):
+                        pattern = part.split('=', 1)[1]
+                    elif part.startswith('script-path='):
+                        script_path = part.split('=', 1)[1]
+                
+                if pattern and script_path:
+                    action = 'script-response-body' if rule_type == 'http-response' else 'script-request-body'
+                    full_rule = f'{pattern} url {action} {script_path}'
+                    return (pattern, action, full_rule)
+            except Exception as e:
+                print(f"Error processing Surge rule: {e}")
+                return None
+        else:  # QuantumultX格式
+            parts = rule.strip().split()
+            if len(parts) < 3:
+                return None
+            
+            url_pattern = parts[0]
+            action = parts[2]
+            
+            return (url_pattern, action, rule)
 
     def get_action_priority(self, action: str) -> int:
         """获取动作的优先级"""
@@ -72,7 +93,7 @@ class RuleProcessor:
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
-        rules = {'url-rewrite': set()}
+        rules = {'url-rewrite': set(), 'script': set()}
         url_rules = {}  # 用于存储URL模式及其对应的规则
         
         if not content:
@@ -82,7 +103,19 @@ class RuleProcessor:
         
         for line in content.splitlines():
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line:
+                continue
+                
+            # 处理注释和Surge格式的hostname
+            if line.startswith('#'):
+                if line.startswith('#>'):
+                    if 'host' not in rules:
+                        rules['host'] = set()
+                    hostnames = line[2:].strip().split(',')
+                    for hostname in hostnames:
+                        hostname = hostname.strip()
+                        if hostname and not hostname.startswith('//'):  # 忽略注释
+                            rules['host'].add(hostname)
                 continue
                 
             # 检查是否是标签行
@@ -92,7 +125,7 @@ class RuleProcessor:
                     rules[current_section] = set()
                 continue
                 
-            # 特殊处理 hostname
+            # 处理常规hostname
             if 'hostname' in line.lower():
                 if 'host' not in rules:
                     rules['host'] = set()
@@ -100,30 +133,31 @@ class RuleProcessor:
                 continue
             
             # 处理规则
-            if current_section:
-                # 解析规则
-                parsed = self.normalize_rule(line)
-                if parsed:
-                    url_pattern, action, full_rule = parsed
-                    
-                    # 对于 reject 类规则，检查优先级
-                    if action.startswith('reject'):
-                        current_priority = self.get_action_priority(action)
-                        if url_pattern in url_rules:
-                            existing_rule, existing_action = url_rules[url_pattern]
-                            existing_priority = self.get_action_priority(existing_action)
-                            # 只有当新规则优先级更高时才替换
-                            if current_priority > existing_priority:
-                                url_rules[url_pattern] = (full_rule, action)
-                        else:
+            parsed = self.normalize_rule(line)
+            if parsed:
+                url_pattern, action, full_rule = parsed
+                
+                if action.startswith('reject'):
+                    # reject类规则使用优先级处理
+                    current_priority = self.get_action_priority(action)
+                    if url_pattern in url_rules:
+                        existing_rule, existing_action = url_rules[url_pattern]
+                        existing_priority = self.get_action_priority(existing_action)
+                        if current_priority > existing_priority:
                             url_rules[url_pattern] = (full_rule, action)
-                    # 对于其他类型规则（如 script-response-body），只保留第一个
-                    elif url_pattern not in url_rules:
+                    else:
+                        url_rules[url_pattern] = (full_rule, action)
+                elif action.startswith('script'):
+                    # 脚本类规则全部保留
+                    rules['script'].add(full_rule)
+                else:
+                    # 其他类型规则只保留第一个
+                    if url_pattern not in url_rules:
                         url_rules[url_pattern] = (full_rule, action)
         
-        # 构建最终规则集
+        # 将reject类规则添加到最终结果
         for _, (full_rule, _) in url_rules.items():
-            rules[current_section].add(full_rule)
+            rules['url-rewrite'].add(full_rule)
                     
         return rules
 
@@ -205,23 +239,29 @@ class RuleProcessor:
             ""
         ]
         
-        # 动态处理每种规则类型
-        for section, rules_set in rules.items():
-            if rules_set:  # 只处理非空的规则集
-                # 对于hostname特殊处理
-                if section == 'host':
-                    content.extend([
-                        "[MITM]",
-                        f"hostname = {self.deduplicate_hostnames(rules_set)}",
-                        ""
-                    ])
-                else:
-                    section_name = section.upper()  # 转换为大写作为标题
-                    content.extend([
-                        f"[{section_name}]",
-                        *sorted(rules_set),
-                        ""
-                    ])
+        # 首先处理 Script 规则
+        if 'script' in rules and rules['script']:
+            content.extend([
+                "[Script]",
+                *sorted(rules['script']),
+                ""
+            ])
+
+        # 然后处理 URL Rewrite 规则
+        if 'url-rewrite' in rules and rules['url-rewrite']:
+            content.extend([
+                "[URL Rewrite]",
+                *sorted(rules['url-rewrite']),
+                ""
+            ])
+        
+        # 最后处理 MITM 规则
+        if 'host' in rules and rules['host']:
+            content.extend([
+                "[MITM]",
+                f"hostname = {self.deduplicate_hostnames(rules['host'])}",
+                ""
+            ])
         
         return '\n'.join(content)
 
