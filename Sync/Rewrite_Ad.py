@@ -36,7 +36,14 @@ class Config:
 class RuleProcessor:
     def __init__(self, config):
         self.config = config
-        
+        self.action_priority = {
+            'reject-dict': 5,
+            'reject-array': 4,
+            'reject-200': 3,
+            'reject-img': 2,
+            'reject': 1
+        }
+
     def download_rule(self, name: str, url: str) -> tuple:
         """下载规则源"""
         try:
@@ -48,14 +55,30 @@ class RuleProcessor:
             print(f"Error downloading {name}: {e}")
             return name, None
 
+    def normalize_rule(self, rule: str) -> tuple:
+        """解析规则，返回 (URL模式, 动作, 完整规则)"""
+        parts = rule.strip().split()
+        if len(parts) < 3:
+            return None
+        
+        url_pattern = parts[0]
+        action = parts[2]
+        
+        return (url_pattern, action, rule)
+
+    def get_action_priority(self, action: str) -> int:
+        """获取动作的优先级"""
+        return self.action_priority.get(action, 0)
+
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
-        rules = {'url-rewrite': set()}  # 默认创建 'url-rewrite' 标签用于存储无标签规则
+        rules = {'url-rewrite': set()}
+        url_rules = {}  # 用于存储URL模式及其对应的规则
         
         if not content:
             return rules
             
-        current_section = 'url-rewrite'  # 默认使用 'url-rewrite' 标签
+        current_section = 'url-rewrite'
         
         for line in content.splitlines():
             line = line.strip()
@@ -64,7 +87,7 @@ class RuleProcessor:
                 
             # 检查是否是标签行
             if line.startswith('[') and line.endswith(']'):
-                current_section = line[1:-1].lower()  # 移除[]并转换为小写
+                current_section = line[1:-1].lower()
                 if current_section not in rules:
                     rules[current_section] = set()
                 continue
@@ -76,9 +99,31 @@ class RuleProcessor:
                 self._process_hostname(line, rules)
                 continue
             
-            # 将规则添加到当前标签下
-            if current_section and line:
-                rules[current_section].add(line)
+            # 处理规则
+            if current_section:
+                # 解析规则
+                parsed = self.normalize_rule(line)
+                if parsed:
+                    url_pattern, action, full_rule = parsed
+                    
+                    # 对于 reject 类规则，检查优先级
+                    if action.startswith('reject'):
+                        current_priority = self.get_action_priority(action)
+                        if url_pattern in url_rules:
+                            existing_rule, existing_action = url_rules[url_pattern]
+                            existing_priority = self.get_action_priority(existing_action)
+                            # 只有当新规则优先级更高时才替换
+                            if current_priority > existing_priority:
+                                url_rules[url_pattern] = (full_rule, action)
+                        else:
+                            url_rules[url_pattern] = (full_rule, action)
+                    # 对于其他类型规则（如 script-response-body），只保留第一个
+                    elif url_pattern not in url_rules:
+                        url_rules[url_pattern] = (full_rule, action)
+        
+        # 构建最终规则集
+        for _, (full_rule, _) in url_rules.items():
+            rules[current_section].add(full_rule)
                     
         return rules
 
