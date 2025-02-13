@@ -41,12 +41,22 @@ class Config:
 class RuleType:
     """规则类型枚举"""
     GENERAL = 'general'
-    REWRITE_LOCAL = 'rewrite_local'
-    MITM = 'mitm'
-    SCRIPT = 'script'
-    URL_REWRITE = 'url_rewrite'
-    HOST = 'host'
+    RULE = 'rule'
     REWRITE = 'rewrite'
+    URL_REWRITE = 'url_rewrite'
+    HEADER_REWRITE = 'header_rewrite'
+    SCRIPT = 'script'
+    HOST = 'host'
+    MITM = 'mitm'
+    PANEL = 'panel'
+    MAP_LOCAL = 'map_local'
+    URL_REGEX = 'url_regex'
+    DOMAIN_SUFFIX = 'domain_suffix'
+    IP_CIDR = 'ip_cidr'
+    SSID_SETTING = 'ssid_setting'
+    FILTER = 'filter'
+    DNS = 'dns'
+    POLICY = 'policy'
 
 class Rule:
     """规则对象"""
@@ -63,6 +73,7 @@ class Rule:
             RuleType.MITM: 90,
             RuleType.SCRIPT: 80,
             RuleType.REWRITE: 70,
+            RuleType.RULE: 60,
         }
         return priorities.get(self.type, 0)
 
@@ -77,14 +88,23 @@ class RuleProcessor:
         self.config = config
         self.rules: Dict[str, Set[Rule]] = {
             RuleType.GENERAL: set(),
-            RuleType.REWRITE_LOCAL: set(),
-            RuleType.MITM: set(),
-            RuleType.SCRIPT: set(),
-            RuleType.URL_REWRITE: set(),
-            RuleType.HOST: set(),
+            RuleType.RULE: set(),
             RuleType.REWRITE: set(),
+            RuleType.URL_REWRITE: set(),
+            RuleType.HEADER_REWRITE: set(),
+            RuleType.SCRIPT: set(),
+            RuleType.HOST: set(),
+            RuleType.MITM: set(),
+            RuleType.PANEL: set(),
+            RuleType.MAP_LOCAL: set(),
+            RuleType.URL_REGEX: set(),
+            RuleType.DOMAIN_SUFFIX: set(),
+            RuleType.IP_CIDR: set(),
+            RuleType.SSID_SETTING: set(),
+            RuleType.FILTER: set(),
+            RuleType.DNS: set(),
+            RuleType.POLICY: set(),
         }
-        self.in_js_block = False
 
     def download_rule(self, name: str, url: str) -> tuple:
         """下载规则源"""
@@ -100,45 +120,41 @@ class RuleProcessor:
         """识别规则类型"""
         line = line.strip().lower()
         
-        # 检查是否进入或退出 JS 代码块
-        if '/*' in line:
-            self.in_js_block = True
-            return None
-        if '*/' in line:
-            self.in_js_block = False
-            return None
-        
-        # 如果在 JS 代码块内，跳过
-        if self.in_js_block:
-            return None
-            
-        # 忽略注释、空行和JS代码
+        # 忽略注释和空行
         if not line or line.startswith('#') or line.startswith('//'):
             return None
+            
+        # 忽略 JSON 格式的内容
+        if (line.startswith('{') or line.startswith('[') or 
+            line.startswith('"') or line.startswith("'")):
+            return None
+            
+        # 忽略函数定义和变量声明
         if (line.startswith('function') or line.startswith('var') or 
             line.startswith('let') or line.startswith('const')):
             return None
-        if line.startswith('return') or line.startswith('switch'):
-            return None
-        if line.startswith('{') or line.startswith('}'):
-            return None
-            
-        # 识别规则头部
+        
+        # 识别特定的规则头部
         if line.startswith('[') and line.endswith(']'):
             section = line[1:-1].lower()
-            if section in ['rewrite_local', 'mitm', 'general', 'script']:
+            if section in ['general', 'rule', 'rewrite', 'script', 'mitm', 'panel']:
                 return section
                 
-        # 识别具体规则
+        # 识别具体的规则类型
         if 'hostname' in line:
             return RuleType.MITM
+        elif 'domain-suffix' in line:
+            return RuleType.DOMAIN_SUFFIX
+        elif 'ip-cidr' in line:
+            return RuleType.IP_CIDR
+        elif 'url-regex' in line:
+            return RuleType.URL_REGEX
         elif line.startswith('^https?://'):
             return RuleType.REWRITE
-        elif line.startswith('http') and 'script-path' in line:
-            return RuleType.SCRIPT
-        elif '.js' in line and ('script-response' in line or 'script-request' in line):
+        elif '.js' in line and ('url script-' in line or 'requires-body=1' in line):
             return RuleType.SCRIPT
             
+        # 如果不符合任何规则格式，返回 None
         return None
 
     def process_rule(self, line: str):
@@ -159,6 +175,14 @@ class RuleProcessor:
 
         current_section = None
         for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+
+            if line.startswith('[') and line.endswith(']'):
+                current_section = line.lower()[1:-1]
+                continue
+
             self.process_rule(line)
 
     def merge_rules(self):
