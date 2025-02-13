@@ -59,7 +59,7 @@ class RuleProcessor:
         
         for line in content.splitlines():
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith('#') or line.startswith('//'):
                 continue
                 
             # 检查是否是标签行
