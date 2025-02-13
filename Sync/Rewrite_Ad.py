@@ -63,7 +63,6 @@ class RuleProcessor:
         """处理reject规则的优先级"""
         url_rules = {}
         
-        # 定义优先级 (数字越大优先级越高)
         priorities = {
             'reject-dict': 3,
             'reject-array': 3,
@@ -153,7 +152,6 @@ class RuleProcessor:
                     
                 url_pattern = parts[0].strip()
                 
-                # 如果URL还没有对应的规则，就保存这个规则（保留第一个）
                 if url_pattern not in url_rules:
                     url_rules[url_pattern] = rule
 
@@ -162,6 +160,10 @@ class RuleProcessor:
                 continue
 
         return set(url_rules.values())
+
+    def _process_request_rules(self, rules: Set[str]) -> Set[str]:
+        """处理http-request类规则,保持原格式不变"""
+        return rules
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
@@ -173,12 +175,13 @@ class RuleProcessor:
             'reject_rules': set(),
             'response_rules': set(),
             'script_rules': set(),
+            'request_rules': set(),
             'other_rules': set()
         }
         
         for line in content.splitlines():
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith('#') or line.startswith('/*') or line.startswith('*/'):
                 continue
                 
             section = self._detect_section(line)
@@ -186,8 +189,9 @@ class RuleProcessor:
                 current_section = section
                 continue
                 
-            # 根据规则类型分类存储
-            if 'script-response-body' in line or 'script-request-body' in line:
+            if 'http-request' in line:
+                temp_rules['request_rules'].add(line)
+            elif 'script-response-body' in line or 'script-request-body' in line:
                 temp_rules['script_rules'].add(line)
             elif 'reject' in line:
                 temp_rules['reject_rules'].add(line)
@@ -196,15 +200,15 @@ class RuleProcessor:
             else:
                 temp_rules['other_rules'].add(line)
 
-        # 分别处理不同类型的规则
         processed_reject_rules = self._process_reject_rules(temp_rules['reject_rules'])
         processed_response_rules = self._process_response_rules(temp_rules['response_rules'])
         processed_script_rules = self._process_script_rules(temp_rules['script_rules'])
+        processed_request_rules = self._process_request_rules(temp_rules['request_rules'])
         
-        # 合并处理后的规则
         self.rule_types['rewrite'].update(processed_reject_rules)
         self.rule_types['rewrite'].update(processed_response_rules)
         self.rule_types['rewrite'].update(processed_script_rules)
+        self.rule_types['rewrite'].update(processed_request_rules)
         self.rule_types['rewrite'].update(temp_rules['other_rules'])
         
         return self.rule_types
@@ -216,7 +220,7 @@ class RuleProcessor:
         section_markers = {
             'general': ['[general]'],
             'rule': ['[rule]'],
-            'rewrite': ['[rewrite]'],
+            'rewrite': ['[rewrite]', '[rewrite_local]'],
             'url_rewrite': ['[url rewrite]', '[url_rewrite]'],
             'header_rewrite': ['[header rewrite]', '[header_rewrite]'],
             'script': ['[script]'],
