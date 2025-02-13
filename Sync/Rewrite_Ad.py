@@ -84,6 +84,7 @@ class RuleProcessor:
             RuleType.HOST: set(),
             RuleType.REWRITE: set(),
         }
+        self.url_patterns = {}  # 用于存储已处理的URL模式
         self.in_js_block = False
 
     def download_rule(self, name: str, url: str) -> tuple:
@@ -141,14 +142,27 @@ class RuleProcessor:
             
         return None
 
-    def process_rule(self, line: str):
+    def extract_url_pattern(self, rule_line: str) -> str:
+        """提取规则中的URL模式"""
+        url_pattern_match = re.match(r'\^?https?:\/\/[^\s]+(?=\s|$)', rule_line)
+        if url_pattern_match:
+            return url_pattern_match.group(0)
+        return None
+
+    def process_rule(self, line: str, current_section: str):
         """处理单条规则"""
         line = line.strip()
         if not line:
             return
             
         rule_type = self.identify_rule_type(line)
-        if rule_type:  # 只添加识别出类型的规则
+        if rule_type:
+            url_pattern = self.extract_url_pattern(line)
+            if url_pattern:
+                # 如果URL模式已存在，跳过(保留第一个)
+                if url_pattern in self.url_patterns:
+                    return
+                self.url_patterns[url_pattern] = line
             rule = Rule(line, rule_type)
             self.rules[rule_type].add(rule)
 
@@ -159,7 +173,15 @@ class RuleProcessor:
 
         current_section = None
         for line in content.splitlines():
-            self.process_rule(line)
+            line = line.strip()
+            if not line:
+                continue
+
+            if line.startswith('[') and line.endswith(']'):
+                current_section = line[1:-1].lower()
+                continue
+
+            self.process_rule(line, current_section)
 
     def merge_rules(self):
         """合并所有规则"""
