@@ -65,7 +65,6 @@ class RuleProcessor:
             pattern = None
             script_path = None
             requires_body = False
-            binary_body_mode = False
             
             # 解析参数
             params = content.split(',')
@@ -79,101 +78,80 @@ class RuleProcessor:
                     script_path = param.split('=')[1]
                 elif 'requires-body=' in param:
                     requires_body = param.split('=')[1].lower() == 'true'
-                elif 'binary-body-mode=' in param:
-                    binary_body_mode = param.split('=')[1].lower() == 'true'
             
-            # 如果缺少必要参数，返回原始行
-            if not all([rule_type, pattern, script_path]):
-                return line
-                
             # 转换规则类型
             if rule_type == 'http-response':
                 qx_type = 'script-response-body' if requires_body else 'script-response-header'
             elif rule_type == 'http-request':
                 qx_type = 'script-request-body' if requires_body else 'script-request-header'
             else:
-                return line
+                return line  # 如果无法识别类型，返回原始行
                 
             # 构建 QuantumultX 格式的规则
-            converted_rule = f"{pattern} url {qx_type} {script_path}"
-            
-            # 如果有binary-body-mode参数，添加到规则末尾
-            if binary_body_mode:
-                converted_rule += ", requires-body=true, binary-body-mode=true"
-                
-            return converted_rule
-            
-        except Exception as e:
-            print(f"Error converting rule: {line}")
-            print(f"Error details: {str(e)}")
-            return line
+            return f"{pattern} url {qx_type} {script_path}"
+        except:
+            return line  # 如果转换失败，返回原始行
 
     def _normalize_url_pattern(self, url: str) -> str:
         """标准化URL模式，便于比较"""
-        try:
-            # 获取URL部分（去除reject等后缀）
-            url = url.split()[0] if ' ' in url else url
-            
-            # 移除 ^ 和 $ 符号
-            url = url.strip('^$')
-            
-            # 将 https?:\/\/ 统一处理
-            url = url.replace('https?://', '').replace('http?://', '')
-            
-            # 移除转义符
-            url = url.replace('\\', '')
-            
-            # 处理尾部斜杠
-            url = url.rstrip('/')  # 移除所有尾部斜杠
-            
-            # 处理版本号通配符
-            url = url.replace('/v\\d', '/v*')
-            
-            return url
-        except:
-            return url
+        # 移除 ^ 和 $ 符号
+        url = url.strip('^$')
+        # 将 https?:\/\/ 统一处理
+        url = url.replace('https?://', '').replace('http?://', '')
+        # 移除转义符
+        url = url.replace('\\', '')
+        # 处理可选的尾部斜杠
+        url = url.rstrip('/?')
+        # 处理版本号通配符
+        url = url.replace('/v\\d', '/v*')
+        return url
 
     def _is_url_pattern_covered(self, url1: str, url2: str) -> bool:
         """检查url1是否被url2覆盖"""
         try:
-            # 获取标准化的URL
-            pattern1 = self._normalize_url_pattern(url1)
-            pattern2 = self._normalize_url_pattern(url2)
+            # 获取URL部分（去除reject等后缀）
+            pattern1 = self._normalize_url_pattern(url1.split()[0])
+            pattern2 = self._normalize_url_pattern(url2.split()[0])
             
-            # 如果完全相同，返回False（在其他地方处理）
+            # 如果两个模式完全相同，返回False（在其他地方处理）
             if pattern1 == pattern2:
                 return False
                 
             # 特殊处理尾部可选参数
-            if pattern1.rstrip('?') == pattern2.rstrip('?'):
+            if pattern1.endswith('?') and pattern2.rstrip('?') == pattern1.rstrip('?'):
                 return True
                 
             # 处理括号中的多选项
             if '(' in pattern2:
                 base_pattern2 = pattern2[:pattern2.find('(')]
                 options = pattern2[pattern2.find('(')+1:pattern2.find(')')].split('|')
+                # 如果pattern1匹配base_pattern2加上任何一个选项，就认为它被覆盖
                 for option in options:
                     full_pattern = base_pattern2 + option
                     if pattern1 == full_pattern:
                         return True
                         
-            # 将模式转换为正则表达式格式
+            # 将模式转换为正则表达式友好的格式
             pattern1 = pattern1.replace('*', '[^/]+').replace('?', '.?')
             pattern2 = pattern2.replace('*', '[^/]+').replace('?', '.?')
             
-            # 检查包含关系
+            # 如果pattern2包含选项，需要特殊处理
+            if '(' in pattern2:
+                return bool(re.match(f"^{pattern2}$", pattern1))
+                
+            # 检查是否存在包含关系
             return bool(re.match(f"^{pattern2}$", pattern1))
         except:
             return False
 
     def _get_rule_type(self, rule: str) -> tuple:
         """获取规则的类型和类别"""
-        # 检查reject类规则
+        # 检查是否是 reject 类规则
         for rule_type in self.REJECT_PRIORITY.keys():
-            if f" {rule_type}" in rule:
+            if rule_type in rule:
                 return ('reject', rule_type)
                 
-        # 检查script类规则
+        # 检查是否是 script 类规则
         for script_type in self.SCRIPT_TYPES:
             if script_type in rule:
                 return ('script', script_type)
@@ -197,59 +175,84 @@ class RuleProcessor:
         script_rules = []
         other_rules = []
         
-        # 将规则分类并预处理
-        url_rules_map = {}  # 用于存储相同URL的不同规则
-        
+        # 将规则分类
         for rule in rules:
             category, rule_type = self._get_rule_type(rule)
-            
-            # 获取URL部分
+            if category == 'reject':
+                reject_rules.append((rule_type, rule))
+            elif category == 'script':
+                script_rules.append((rule_type, rule))
+            else:
+                other_rules.append(rule)
+
+        # 处理 reject 规则
+        url_reject_rules = {}
+        for rule_type, rule in reject_rules:
             url = rule.split()[0]
-            normalized_url = self._normalize_url_pattern(url)
+            if url not in url_reject_rules:
+                url_reject_rules[url] = []
+            url_reject_rules[url].append((rule_type, rule))
+
+        # 移除被其他规则覆盖的URL模式
+        filtered_reject_rules = []
+        reject_urls = [rule[1].split()[0] for rule in reject_rules]
+        
+        for i, (rule_type1, rule1) in enumerate(reject_rules):
+            url1 = rule1.split()[0]
+            is_covered = False
             
-            # 将规则按照标准化后的URL分组
-            if normalized_url not in url_rules_map:
-                url_rules_map[normalized_url] = []
-            url_rules_map[normalized_url].append((category, rule_type, rule))
-        
-        # 处理每组相同URL的规则
-        for normalized_url, url_rules in url_rules_map.items():
-            # 分离不同类型的规则
-            reject_group = [(rt, r) for c, rt, r in url_rules if c == 'reject']
-            script_group = [(rt, r) for c, rt, r in url_rules if c == 'script']
-            other_group = [r for c, rt, r in url_rules if c == 'other']
+            for j, (rule_type2, rule2) in enumerate(reject_rules):
+                if i != j:
+                    url2 = rule2.split()[0]
+                    if self._is_url_pattern_covered(url1, url2):
+                        is_covered = True
+                        break
             
-            # 对于reject规则，保留优先级最高的
-            if reject_group:
-                best_reject = min(reject_group, key=lambda x: self.REJECT_PRIORITY[x[0]])
-                reject_rules.append(best_reject)
-                
-            # 对于script规则，保留每种类型的第一个
-            if script_group:
-                seen_types = set()
-                for rule_type, rule in script_group:
-                    if rule_type not in seen_types:
-                        script_rules.append((rule_type, rule))
-                        seen_types.add(rule_type)
-                        
-            # 其他规则直接添加
-            other_rules.extend(other_group)
-        
-        # 最终排序
-        final_reject_rules = [rule for _, rule in sorted(reject_rules, key=lambda x: (x[1].split()[0], self.REJECT_PRIORITY[x[0]]))]
-        final_script_rules = [rule for _, rule in sorted(script_rules, key=lambda x: (x[1].split()[0], x[0]))]
-        final_other_rules = sorted(other_rules)
-        
-        return final_reject_rules + final_script_rules + final_other_rules
+            if not is_covered:
+                filtered_reject_rules.append((rule_type1, rule1))
+
+        # 对每个剩余的URL只保留优先级最高的reject规则
+        final_reject_rules = []
+        url_reject_rules = {}
+        for rule_type, rule in filtered_reject_rules:
+            url = rule.split()[0]
+            if url not in url_reject_rules:
+                url_reject_rules[url] = []
+            url_reject_rules[url].append((rule_type, rule))
+            
+        for url, rules_list in url_reject_rules.items():
+            best_rule = min(rules_list, key=lambda x: self.REJECT_PRIORITY[x[0]])[1]
+            final_reject_rules.append(best_rule)
+
+        # 处理 script 规则
+        url_script_rules = {}
+        for rule_type, rule in script_rules:
+            url = rule.split()[0]
+            key = (url, rule_type)  # 使用URL和脚本类型的组合作为键
+            if key not in url_script_rules:
+                url_script_rules[key] = []
+            url_script_rules[key].append(rule)
+
+        # 对于script规则，相同URL但不同类型的规则都保留第一个
+        final_script_rules = []
+        for (url, rule_type), rules_list in url_script_rules.items():
+            final_script_rules.append(rules_list[0])
+
+        # 排序
+        final_reject_rules.sort(key=lambda x: x.split()[0])
+        final_script_rules.sort(key=lambda x: (x.split()[0], x.split()[2]))
+        other_rules.sort()
+
+        return final_reject_rules + final_script_rules + other_rules
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
-        rules = {'url-rewrite': set()}
+        rules = {'url-rewrite': set()}  # 默认创建 'url-rewrite' 标签用于存储无标签规则
         
         if not content:
             return rules
             
-        current_section = 'url-rewrite'
+        current_section = 'url-rewrite'  # 默认使用 'url-rewrite' 标签
         
         for line in content.splitlines():
             line = line.strip()
@@ -258,7 +261,7 @@ class RuleProcessor:
                 
             # 检查是否是标签行
             if line.startswith('[') and line.endswith(']'):
-                current_section = line[1:-1].lower()
+                current_section = line[1:-1].lower()  # 移除[]并转换为小写
                 if current_section not in rules:
                     rules[current_section] = set()
                 continue
@@ -292,7 +295,10 @@ class RuleProcessor:
 
     def deduplicate_hostnames(self, hostnames: Set[str]) -> str:
         """去重和排序hostname"""
+        # 转换为list并排序
         hostname_list = sorted(hostnames)
+        
+        # 处理通配符域名
         wildcards = set()
         specific = set()
         
@@ -302,6 +308,7 @@ class RuleProcessor:
             else:
                 specific.add(hostname)
         
+        # 移除被通配符覆盖的具体域名
         final_specific = set()
         for hostname in specific:
             should_keep = True
@@ -312,6 +319,7 @@ class RuleProcessor:
             if should_keep:
                 final_specific.add(hostname)
         
+        # 合并结果
         final_hostnames = sorted(wildcards | final_specific)
         return ','.join(final_hostnames)
     
@@ -326,11 +334,13 @@ class RuleProcessor:
         """合并所有规则"""
         merged_rules = {}
         
+        # 下载和处理所有规则
         for name, url in self.config.REWRITE_SOURCES.items():
             print(f"Downloading {name}...")
             _, content = self.download_rule(name, url)
             if content:
                 rules = self.process_rules(content)
+                # 确保所有遇到的标签类型都在merged_rules中存在
                 for key in rules:
                     if key not in merged_rules:
                         merged_rules[key] = set()
@@ -351,8 +361,10 @@ class RuleProcessor:
             ""
         ]
         
+        # 动态处理每种规则类型
         for section, rules_set in rules.items():
-            if rules_set:
+            if rules_set:  # 只处理非空的规则集
+                # 对于hostname特殊处理
                 if section == 'host':
                     content.extend([
                         "[MITM]",
@@ -360,10 +372,10 @@ class RuleProcessor:
                         ""
                     ])
                 else:
-                    section_name = section.upper()
+                    section_name = section.upper()  # 转换为大写作为标题
                     content.extend([
                         f"[{section_name}]",
-                        *self._sort_rules(rules_set),
+                        *self._sort_rules(rules_set),  # 使用新的排序方法
                         ""
                     ])
         
@@ -373,6 +385,7 @@ class RuleProcessor:
         """更新README文件"""
         beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
         
+        # 生成规则统计信息
         rule_counts = []
         for section, rules_set in rules.items():
             rule_counts.append(f"- {section.title()} 规则数量：{len(rules_set)}")
@@ -399,16 +412,21 @@ def main():
     processor = RuleProcessor(config)
     
     try:
+        # 创建输出目录
         os.makedirs(os.path.join(config.REPO_PATH, config.REWRITE_DIR), exist_ok=True)
         
+        # 合并规则
         rules = processor.merge_rules()
         
+        # 生成输出文件
         output = processor.generate_output(rules)
         
+        # 写入文件
         output_path = os.path.join(config.REPO_PATH, config.REWRITE_DIR, config.OUTPUT_FILE)
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(output)
             
+        # 更新 README
         processor.update_readme(rules)
         
         print("Successfully generated rules and README")
