@@ -266,10 +266,27 @@ class RuleProcessor:
             return rules
             
         current_section = 'url-rewrite'  # 默认使用 'url-rewrite' 标签
+        in_script = False  # 标记是否在脚本代码块内
         
         for line in content.splitlines():
             line = line.strip()
+            
+            # 跳过空行和注释
             if not line or line.startswith('#') or line.startswith('//'):
+                continue
+                
+            # 检查是否进入脚本代码块
+            if line.startswith('/*'):
+                in_script = True
+                continue
+            
+            # 检查是否退出脚本代码块    
+            if line.startswith('*/'):
+                in_script = False
+                continue
+                
+            # 如果在脚本代码块内,跳过该行
+            if in_script:
                 continue
                 
             # 检查是否是标签行
@@ -279,7 +296,7 @@ class RuleProcessor:
                     rules[current_section] = set()
                 continue
                 
-            # 特殊处理 hostname
+            # 处理 hostname
             if 'hostname' in line.lower():
                 if 'host' not in rules:
                     rules['host'] = set()
@@ -298,7 +315,7 @@ class RuleProcessor:
                     rules['script'].add(line)
                     break
             
-            # 如果不是脚本类规则，则添加到当前标签下
+            # 如果不是脚本类规则,则添加到当前标签下
             if not is_script and current_section:
                 rules[current_section].add(line)
                     
