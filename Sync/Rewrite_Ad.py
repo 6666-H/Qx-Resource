@@ -247,7 +247,10 @@ class RuleProcessor:
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
-        rules = {'url-rewrite': set()}  # 默认创建 'url-rewrite' 标签用于存储无标签规则
+        rules = {
+            'url-rewrite': set(),  # 默认创建 'url-rewrite' 标签用于存储无标签规则
+            'script': set()        # 创建 'script' 标签用于存储脚本类规则
+        }
         
         if not content:
             return rules
@@ -277,8 +280,16 @@ class RuleProcessor:
             if ' = type=' in line:
                 line = self._convert_surge_rule(line)
             
-            # 将规则添加到当前标签下
-            if current_section and line:
+            # 检查是否是脚本类规则
+            is_script = False
+            for script_type in self.SCRIPT_TYPES:
+                if f'url {script_type}' in line:
+                    is_script = True
+                    rules['script'].add(line)
+                    break
+            
+            # 如果不是脚本类规则，则添加到当前标签下
+            if not is_script and current_section:
                 rules[current_section].add(line)
                     
         return rules
