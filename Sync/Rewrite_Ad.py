@@ -52,6 +52,37 @@ class RuleProcessor:
             'script-request-header'
         }
 
+    def _normalize_url_pattern(self, url: str) -> str:
+        """标准化URL模式，便于比较"""
+        # 移除 ^ 和 $ 符号
+        url = url.strip('^$')
+        # 将 https?:\/\/ 统一处理
+        url = url.replace('https?://', '').replace('http?://', '')
+        # 移除转义符
+        url = url.replace('\\', '')
+        return url
+
+    def _is_url_pattern_covered(self, url1: str, url2: str) -> bool:
+        """检查url1是否被url2覆盖"""
+        # 获取URL部分（去除reject等后缀）
+        pattern1 = self._normalize_url_pattern(url1.split()[0])
+        pattern2 = self._normalize_url_pattern(url2.split()[0])
+        
+        # 如果两个模式完全相同，返回False（在其他地方处理）
+        if pattern1 == pattern2:
+            return False
+            
+        # 将模式转换为正则表达式友好的格式
+        pattern1 = pattern1.replace('*', '.*').replace('?', '.?')
+        pattern2 = pattern2.replace('*', '.*').replace('?', '.?')
+        
+        # 检查是否存在包含关系
+        try:
+            import re
+            return bool(re.match(f"^{pattern2}$", pattern1.replace('(.*)', '').replace('(.?)', '')))
+        except:
+            return False
+
     def _get_rule_type(self, rule: str) -> tuple:
         """获取规则的类型和类别"""
         # 检查是否是 reject 类规则
@@ -101,6 +132,37 @@ class RuleProcessor:
                 url_reject_rules[url] = []
             url_reject_rules[url].append((rule_type, rule))
 
+        # 移除被其他规则覆盖的URL模式
+        filtered_reject_rules = []
+        reject_urls = [rule[1].split()[0] for rule in reject_rules]
+        
+        for i, (rule_type1, rule1) in enumerate(reject_rules):
+            url1 = rule1.split()[0]
+            is_covered = False
+            
+            for j, (rule_type2, rule2) in enumerate(reject_rules):
+                if i != j:
+                    url2 = rule2.split()[0]
+                    if self._is_url_pattern_covered(url1, url2):
+                        is_covered = True
+                        break
+            
+            if not is_covered:
+                filtered_reject_rules.append((rule_type1, rule1))
+
+        # 对每个剩余的URL只保留优先级最高的reject规则
+        final_reject_rules = []
+        url_reject_rules = {}
+        for rule_type, rule in filtered_reject_rules:
+            url = rule.split()[0]
+            if url not in url_reject_rules:
+                url_reject_rules[url] = []
+            url_reject_rules[url].append((rule_type, rule))
+            
+        for url, rules_list in url_reject_rules.items():
+            best_rule = min(rules_list, key=lambda x: self.REJECT_PRIORITY[x[0]])[1]
+            final_reject_rules.append(best_rule)
+
         # 处理 script 规则
         url_script_rules = {}
         for rule_type, rule in script_rules:
@@ -110,12 +172,6 @@ class RuleProcessor:
                 url_script_rules[key] = []
             url_script_rules[key].append(rule)
 
-        # 对每个URL只保留优先级最高的reject规则
-        final_reject_rules = []
-        for url, rules_list in url_reject_rules.items():
-            best_rule = min(rules_list, key=lambda x: self.REJECT_PRIORITY[x[0]])[1]
-            final_reject_rules.append(best_rule)
-
         # 对于script规则，相同URL但不同类型的规则都保留第一个
         final_script_rules = []
         for (url, rule_type), rules_list in url_script_rules.items():
@@ -123,10 +179,9 @@ class RuleProcessor:
 
         # 排序
         final_reject_rules.sort(key=lambda x: x.split()[0])
-        final_script_rules.sort(key=lambda x: (x.split()[0], x.split()[2]))  # 按URL和脚本类型排序
+        final_script_rules.sort(key=lambda x: (x.split()[0], x.split()[2]))
         other_rules.sort()
 
-        # 返回排序后的规则
         return final_reject_rules + final_script_rules + other_rules
 
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
