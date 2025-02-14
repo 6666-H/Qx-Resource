@@ -116,57 +116,10 @@ class RuleProcessor:
         url = url.replace('/v\\d', '/v*')
         return url
 
-    def _is_url_pattern_covered(self, url1: str, url2: str) -> bool:
-        """检查url1是否被url2覆盖"""
-        try:
-            # 获取URL部分（去除reject等后缀）
-            pattern1 = self._normalize_url_pattern(url1.split()[0])
-            pattern2 = self._normalize_url_pattern(url2.split()[0])
-            
-            # 如果两个模式完全相同，返回True
-            if pattern1 == pattern2:
-                return True
-                
-            # 特殊处理尾部可选参数
-            if pattern1.rstrip('?') == pattern2.rstrip('?'):
-                return True
-                
-            # 处理括号中的多选项
-            if '(' in pattern2:
-                base_pattern2 = pattern2[:pattern2.find('(')]
-                options = pattern2[pattern2.find('(')+1:pattern2.find(')')].split('|')
-                # 如果pattern1匹配base_pattern2加上任何一个选项，就认为它被覆盖
-                for option in options:
-                    full_pattern = base_pattern2 + option
-                    if pattern1 == full_pattern:
-                        return True
-                        
-            # 将模式转换为正则表达式友好的格式
-            pattern1 = pattern1.replace('*', '[^/]+').replace('?', '.?')
-            pattern2 = pattern2.replace('*', '[^/]+').replace('?', '.?')
-            
-            # 如果pattern2包含选项，需要特殊处理
-            if '(' in pattern2:
-                return bool(re.match(f"^{pattern2}$", pattern1))
-                
-            # 检查是否存在包含关系
-            return bool(re.match(f"^{pattern2}$", pattern1))
-        except:
-            return False
-
-    def _get_rule_type(self, rule: str) -> tuple:
-        """获取规则的类型和类别"""
-        # 检查是否是 reject 类规则
-        for rule_type in self.REJECT_PRIORITY.keys():
-            if rule_type in rule:
-                return ('reject', rule_type)
-                
-        # 检查是否是 script 类规则
-        for script_type in self.SCRIPT_TYPES:
-            if script_type in rule:
-                return ('script', script_type)
-                
-        return ('other', 'other')
+    def _sort_rules(self, rules: Set[str]) -> List[str]:
+        """根据优先级对规则进行排序"""
+        sorted_rules = sorted(list(rules))
+        return sorted_rules
 
     def download_rule(self, name: str, url: str) -> tuple:
         """下载规则源"""
@@ -179,146 +132,54 @@ class RuleProcessor:
             print(f"Error downloading {name}: {e}")
             return name, None
 
-    def _sort_rules(self, rules: Set[str]) -> List[str]:
-        """根据优先级对规则进行排序"""
-        reject_rules = []
-        script_rules = []
-        other_rules = []
-        
-        # 将规则分类
-        for rule in rules:
-            category, rule_type = self._get_rule_type(rule)
-            if category == 'reject':
-                reject_rules.append((rule_type, rule))
-            elif category == 'script':
-                script_rules.append((rule_type, rule))
-            else:
-                other_rules.append(rule)
-
-        # 处理 reject 规则
-        url_reject_rules = {}
-        for rule_type, rule in reject_rules:
-            url = rule.split()[0]
-            if url not in url_reject_rules:
-                url_reject_rules[url] = []
-            url_reject_rules[url].append((rule_type, rule))
-
-        # 移除被其他规则覆盖的URL模式
-        filtered_reject_rules = []
-        reject_urls = [rule[1].split()[0] for rule in reject_rules]
-        
-        for i, (rule_type1, rule1) in enumerate(reject_rules):
-            url1 = rule1.split()[0]
-            is_covered = False
-            
-            for j, (rule_type2, rule2) in enumerate(reject_rules):
-                if i != j:
-                    url2 = rule2.split()[0]
-                    if self._is_url_pattern_covered(url1, url2):
-                        is_covered = True
-                        break
-            
-            if not is_covered:
-                filtered_reject_rules.append((rule_type1, rule1))
-
-        # 对每个剩余的URL只保留优先级最高的reject规则
-        final_reject_rules = []
-        url_reject_rules = {}
-        for rule_type, rule in filtered_reject_rules:
-            url = rule.split()[0]
-            if url not in url_reject_rules:
-                url_reject_rules[url] = []
-            url_reject_rules[url].append((rule_type, rule))
-            
-        for url, rules_list in url_reject_rules.items():
-            best_rule = min(rules_list, key=lambda x: self.REJECT_PRIORITY[x[0]])[1]
-            final_reject_rules.append(best_rule)
-
-        # 处理 script 规则
-        url_script_rules = {}
-        for rule_type, rule in script_rules:
-            url = rule.split()[0]
-            key = (url, rule_type)  # 使用URL和脚本类型的组合作为键
-            if key not in url_script_rules:
-                url_script_rules[key] = []
-            url_script_rules[key].append(rule)
-
-        # 对于script规则，相同URL但不同类型的规则都保留第一个
-        final_script_rules = []
-        for (url, rule_type), rules_list in url_script_rules.items():
-            final_script_rules.append(rules_list[0])
-
-        # 排序
-        final_reject_rules.sort(key=lambda x: x.split()[0])
-        final_script_rules.sort(key=lambda x: (x.split()[0], x.split()[2]))
-        other_rules.sort()
-
-        return final_reject_rules + final_script_rules + other_rules
-
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
         rules = {
-            'url-rewrite': set(),  # 默认创建 'url-rewrite' 标签用于存储无标签规则
-            'script': set()        # 创建 'script' 标签用于存储脚本类规则
+            'rewrite_local': set(),  # 用于存储重写规则
+            'host': set()           # 用于存储mitm主机名
         }
         
         if not content:
             return rules
             
-        current_section = 'url-rewrite'  # 默认使用 'url-rewrite' 标签
-        in_script = False  # 标记是否在脚本代码块内
-        
-        for line in content.splitlines():
-            line = line.strip()
+        lines = content.splitlines()
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
             
-            # 跳过空行和注释
-            if not line or line.startswith('#') or line.startswith('//'):
+            # 跳过空行和普通注释
+            if not line or line.startswith('//'):
+                i += 1
                 continue
                 
-            # 检查是否进入脚本代码块
-            if line.startswith('/*'):
-                in_script = True
-                continue
-            
-            # 检查是否退出脚本代码块    
-            if line.startswith('*/'):
-                in_script = False
-                continue
-                
-            # 如果在脚本代码块内,跳过该行
-            if in_script:
-                continue
-                
-            # 检查是否是标签行
-            if line.startswith('[') and line.endswith(']'):
-                current_section = line[1:-1].lower()  # 移除[]并转换为小写
-                if current_section not in rules:
-                    rules[current_section] = set()
-                continue
-                
-            # 处理 hostname
-            if 'hostname' in line.lower():
+            # 如果找到mitm hostname
+            if 'hostname' in line.lower() and '=' in line:
                 if 'host' not in rules:
                     rules['host'] = set()
                 self._process_hostname(line, rules)
+                i += 1
+                continue
+                
+            # 如果是重写规则（通常包含url和script-path）
+            if ('url script-' in line.lower() or 
+                'http-request' in line.lower() or 
+                'http-response' in line.lower()):
+                # 清理并标准化规则
+                line = line.strip()
+                if not line.startswith('#'):  # 跳过注释的规则
+                    rules['rewrite_local'].add(line)
+                i += 1
+                continue
+                
+            # 如果遇到js代码块，跳过整个代码块
+            if line.startswith('/*'):
+                while i < len(lines) and '*/' not in lines[i]:
+                    i += 1
+                i += 1  # 跳过结束的 */
                 continue
             
-            # 检查是否是 Surge 格式的规则并转换
-            if ' = type=' in line:
-                line = self._convert_surge_rule(line)
-            
-            # 检查是否是脚本类规则
-            is_script = False
-            for script_type in self.SCRIPT_TYPES:
-                if f'url {script_type}' in line:
-                    is_script = True
-                    rules['script'].add(line)
-                    break
-            
-            # 如果不是脚本类规则,则添加到当前标签下
-            if not is_script and current_section:
-                rules[current_section].add(line)
-                    
+            i += 1
+        
         return rules
 
     def _process_hostname(self, line: str, rules: Dict[str, Set[str]]):
@@ -399,23 +260,21 @@ class RuleProcessor:
             ""
         ]
         
-        # 动态处理每种规则类型
-        for section, rules_set in rules.items():
-            if rules_set:  # 只处理非空的规则集
-                # 对于hostname特殊处理
-                if section == 'host':
-                    content.extend([
-                        "[MITM]",
-                        f"hostname = {self.deduplicate_hostnames(rules_set)}",
-                        ""
-                    ])
-                else:
-                    section_name = section.upper()  # 转换为大写作为标题
-                    content.extend([
-                        f"[{section_name}]",
-                        *self._sort_rules(rules_set),  # 使用新的排序方法
-                        ""
-                    ])
+        # 首先添加 [MITM] 部分
+        if 'host' in rules and rules['host']:
+            content.extend([
+                "[MITM]",
+                f"hostname = {self.deduplicate_hostnames(rules['host'])}",
+                ""
+            ])
+        
+        # 然后添加重写规则
+        if 'rewrite_local' in rules and rules['rewrite_local']:
+            content.extend([
+                "[REWRITE_LOCAL]",
+                *sorted(rules['rewrite_local']),  # 对规则进行排序
+                ""
+            ])
         
         return '\n'.join(content)
 
