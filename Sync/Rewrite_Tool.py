@@ -37,18 +37,15 @@ class RuleProcessor:
     def process_rules(self, content: str) -> Dict[str, any]:
         """处理规则内容"""
         rules = {
-            'file_comments': [],  # 存储文件级别的注释
             'sections': {},       # 使用字典存储所有标签内容 {标签名: [内容列表]}
             'host': set()        # 单独存储所有hostname
         }
         
         if not content:
             return rules
-                
+            
         lines = content.splitlines()
         current_section = None
-        current_comment = None
-        is_file_comment = True  # 用于标记是否在处理文件头部注释
         
         for line in lines:
             line = line.strip()
@@ -59,40 +56,28 @@ class RuleProcessor:
             
             # 检查是否是标签行 - 匹配[xxx]格式
             if line.startswith('[') and line.endswith(']'):
-                current_section = line
-                is_file_comment = False  # 遇到标签就不再是文件注释
+                current_section = line.lower()  # 统一转换为小写
                 if current_section not in rules['sections']:
                     rules['sections'][current_section] = []
                 continue
             
-            # 处理注释行
-            if line.startswith('#') or line.startswith('//') or (line.startswith('/*') and '*/' in line):
-                if is_file_comment:
-                    rules['file_comments'].append(line)
-                else:
-                    current_comment = line
-                continue
-            
             # 处理规则内容
             if current_section:
-                is_file_comment = False  # 有内容就不再是文件注释
-                if current_comment:
-                    rules['sections'][current_section].append(current_comment)
-                    current_comment = None
-                rules['sections'][current_section].append(line)
-                
-                # 如果是hostname行,额外收集
-                if 'hostname' in line.lower() and '=' in line:
-                    hostname = line.split('=')[1].strip()
-                    if hostname:
-                        rules['host'].update(hostname.split(','))
+                # 只保留规则行
+                if not line.startswith('#') and not line.startswith('//'):
+                    rules['sections'][current_section].append(line)
+                    
+                    # 如果是hostname行,额外收集
+                    if 'hostname' in line.lower() and '=' in line:
+                        hostname = line.split('=')[1].strip()
+                        if hostname:
+                            rules['host'].update(hostname.split(','))
 
         return rules
 
     def merge_rules(self) -> Dict[str, any]:
         """合并所有规则"""
         merged_rules = {
-            'file_comments': [],
             'sections': {},
             'host': set()
         }
@@ -103,13 +88,13 @@ class RuleProcessor:
             _, content = self.download_rule(name, url)
             if content:
                 rules = self.process_rules(content)
-                # 合并文件注释
-                merged_rules['file_comments'].extend([f"# {name}:"] + rules['file_comments'])
                 # 合并各标签内容
                 for section, contents in rules['sections'].items():
                     if section not in merged_rules['sections']:
                         merged_rules['sections'][section] = []
-                    merged_rules['sections'][section].extend([f"# {name}"] + contents)
+                    if contents:  # 只有当有内容时才添加源名称注释和内容
+                        merged_rules['sections'][section].append(f"# {name}")
+                        merged_rules['sections'][section].extend(contents)
                 merged_rules['host'].update(rules['host'])
         
         return merged_rules
@@ -124,19 +109,14 @@ class RuleProcessor:
             f"# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)",
             "# 合并自以下源：",
             *[f"# {name}: {url}" for name, url in self.config.REWRITE_SOURCES.items()],
-            "",
-            "# 原始文件注释："
+            ""
         ]
-        
-        # 添加原始文件注释
-        content.extend(rules['file_comments'])
-        content.append("")
         
         # 添加其他所有标签的内容
         for section, contents in rules['sections'].items():
-            if '[mitm]' not in section.lower():  # 跳过MITM部分留到最后
+            if '[mitm]' not in section:  # 跳过MITM部分留到最后
                 content.extend([
-                    section,  # 添加标签
+                    section.upper(),  # 添加标签，转换为大写
                     *contents,  # 展开该标签下的所有内容
                     ""        # 添加空行分隔
                 ])
@@ -159,7 +139,7 @@ class RuleProcessor:
         section_counts = {}
         for section, contents in rules['sections'].items():
             # 只统计非注释行
-            rule_count = len([line for line in contents if not line.startswith('#') and not line.startswith('//')])
+            rule_count = len([line for line in contents if not line.startswith('#')])
             section_counts[section] = rule_count
         
         content = f"""# 自建重写规则合集
@@ -172,7 +152,7 @@ class RuleProcessor:
 
 ## 规则统计
 - MITM主机数量：{len(rules['host'])}
-{"".join([f'- {section} 规则数量：{count}\n' for section, count in section_counts.items()])}
+{"".join([f'- {section.upper()} 规则数量：{count}\n' for section, count in section_counts.items()])}
 
 ## 规则来源
 {chr(10).join([f'- {name}: {url}' for name, url in self.config.REWRITE_SOURCES.items()])}
