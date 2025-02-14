@@ -100,8 +100,10 @@ class RuleProcessor:
         url = url.replace('https?://', '').replace('http?://', '')
         # 移除转义符
         url = url.replace('\\', '')
-        # 处理可选的尾部斜杠
-        url = url.rstrip('/?')
+        # 处理尾部斜杠，统一移除
+        url = url.rstrip('/')
+        # 处理可选的问号
+        url = url.rstrip('?')
         # 处理版本号通配符
         url = url.replace('/v\\d', '/v*')
         return url
@@ -113,12 +115,12 @@ class RuleProcessor:
             pattern1 = self._normalize_url_pattern(url1.split()[0])
             pattern2 = self._normalize_url_pattern(url2.split()[0])
             
-            # 如果两个模式完全相同，返回False（在其他地方处理）
+            # 如果两个模式完全相同，返回True
             if pattern1 == pattern2:
-                return False
+                return True
                 
             # 特殊处理尾部可选参数
-            if pattern1.endswith('?') and pattern2.rstrip('?') == pattern1.rstrip('?'):
+            if pattern1.rstrip('?') == pattern2.rstrip('?'):
                 return True
                 
             # 处理括号中的多选项
