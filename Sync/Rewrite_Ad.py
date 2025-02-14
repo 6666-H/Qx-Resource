@@ -53,6 +53,45 @@ class RuleProcessor:
             'script-request-header'
         }
 
+    def _convert_surge_rule(self, line: str) -> str:
+        """将 Surge 格式的规则转换为 QuantumultX 格式"""
+        try:
+            # 解析规则
+            name, content = line.split('=', 1)
+            content = content.strip()
+            
+            # 提取关键信息
+            rule_type = None
+            pattern = None
+            script_path = None
+            requires_body = False
+            
+            # 解析参数
+            params = content.split(',')
+            for param in params:
+                param = param.strip()
+                if 'type=' in param:
+                    rule_type = param.split('=')[1]
+                elif 'pattern=' in param:
+                    pattern = param.split('=')[1]
+                elif 'script-path=' in param:
+                    script_path = param.split('=')[1]
+                elif 'requires-body=' in param:
+                    requires_body = param.split('=')[1].lower() == 'true'
+            
+            # 转换规则类型
+            if rule_type == 'http-response':
+                qx_type = 'script-response-body' if requires_body else 'script-response-header'
+            elif rule_type == 'http-request':
+                qx_type = 'script-request-body' if requires_body else 'script-request-header'
+            else:
+                return line  # 如果无法识别类型，返回原始行
+                
+            # 构建 QuantumultX 格式的规则
+            return f"{pattern} url {qx_type} {script_path}"
+        except:
+            return line  # 如果转换失败，返回原始行
+
     def _normalize_url_pattern(self, url: str) -> str:
         """标准化URL模式，便于比较"""
         # 移除 ^ 和 $ 符号
@@ -233,6 +272,10 @@ class RuleProcessor:
                     rules['host'] = set()
                 self._process_hostname(line, rules)
                 continue
+            
+            # 检查是否是 Surge 格式的规则并转换
+            if ' = type=' in line:
+                line = self._convert_surge_rule(line)
             
             # 将规则添加到当前标签下
             if current_section and line:
