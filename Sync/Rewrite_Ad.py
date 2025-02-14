@@ -67,30 +67,52 @@ class RuleProcessor:
             requires_body = False
             
             # 解析参数
-            params = content.split(',')
+            params = []
+            current_param = ''
+            in_quote = False
+            
+            # 先处理引号内的内容
+            for char in content:
+                if char == ',' and not in_quote:
+                    if current_param.strip():
+                        params.append(current_param.strip())
+                    current_param = ''
+                elif char == '"':
+                    in_quote = not in_quote
+                    current_param += char
+                else:
+                    current_param += char
+            if current_param.strip():
+                params.append(current_param.strip())
+
+            # 解析参数
             for param in params:
                 param = param.strip()
-                if 'type=' in param:
+                if param.startswith('type='):
                     rule_type = param.split('=')[1]
-                elif 'pattern=' in param:
-                    pattern = param.split('=')[1]
-                elif 'script-path=' in param:
-                    script_path = param.split('=')[1]
-                elif 'requires-body=' in param:
+                elif param.startswith('pattern='):
+                    pattern = param.split('=', 1)[1].strip('"')
+                elif param.startswith('script-path='):
+                    script_path = param.split('=', 1)[1].strip('"')
+                elif param.startswith('requires-body='):
                     requires_body = param.split('=')[1].lower() == 'true'
             
+            if not pattern or not script_path:
+                return line
+
             # 转换规则类型
             if rule_type == 'http-response':
                 qx_type = 'script-response-body' if requires_body else 'script-response-header'
             elif rule_type == 'http-request':
                 qx_type = 'script-request-body' if requires_body else 'script-request-header'
             else:
-                return line  # 如果无法识别类型，返回原始行
+                return line
                 
             # 构建 QuantumultX 格式的规则
             return f"{pattern} url {qx_type} {script_path}"
-        except:
-            return line  # 如果转换失败，返回原始行
+        except Exception as e:
+            print(f"Error converting rule: {e}")
+            return line
 
     def _normalize_url_pattern(self, url: str) -> str:
         """标准化URL模式，便于比较"""
