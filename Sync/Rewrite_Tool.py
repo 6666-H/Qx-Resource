@@ -104,8 +104,8 @@ class RuleProcessor:
         beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
         
         content = [
-            f"#!name = 自建重写规则合集",
-            f"#!desc = 自建重写规则合集",
+            f"#!name = 自建重写解锁规则合集",
+            f"#!desc = 自建重写解锁规则合集",
             f"# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)",
             "# 合并自以下源：",
             *[f"# {name}: {url}" for name, url in self.config.REWRITE_SOURCES.items()],
