@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import datetime
 from datetime import timedelta
@@ -60,26 +61,47 @@ class RuleProcessor:
         url = url.replace('https?://', '').replace('http?://', '')
         # 移除转义符
         url = url.replace('\\', '')
+        # 处理可选的尾部斜杠
+        url = url.rstrip('/?')
+        # 处理版本号通配符
+        url = url.replace('/v\\d', '/v*')
         return url
 
     def _is_url_pattern_covered(self, url1: str, url2: str) -> bool:
         """检查url1是否被url2覆盖"""
-        # 获取URL部分（去除reject等后缀）
-        pattern1 = self._normalize_url_pattern(url1.split()[0])
-        pattern2 = self._normalize_url_pattern(url2.split()[0])
-        
-        # 如果两个模式完全相同，返回False（在其他地方处理）
-        if pattern1 == pattern2:
-            return False
-            
-        # 将模式转换为正则表达式友好的格式
-        pattern1 = pattern1.replace('*', '.*').replace('?', '.?')
-        pattern2 = pattern2.replace('*', '.*').replace('?', '.?')
-        
-        # 检查是否存在包含关系
         try:
-            import re
-            return bool(re.match(f"^{pattern2}$", pattern1.replace('(.*)', '').replace('(.?)', '')))
+            # 获取URL部分（去除reject等后缀）
+            pattern1 = self._normalize_url_pattern(url1.split()[0])
+            pattern2 = self._normalize_url_pattern(url2.split()[0])
+            
+            # 如果两个模式完全相同，返回False（在其他地方处理）
+            if pattern1 == pattern2:
+                return False
+                
+            # 特殊处理尾部可选参数
+            if pattern1.endswith('?') and pattern2.rstrip('?') == pattern1.rstrip('?'):
+                return True
+                
+            # 处理括号中的多选项
+            if '(' in pattern2:
+                base_pattern2 = pattern2[:pattern2.find('(')]
+                options = pattern2[pattern2.find('(')+1:pattern2.find(')')].split('|')
+                # 如果pattern1匹配base_pattern2加上任何一个选项，就认为它被覆盖
+                for option in options:
+                    full_pattern = base_pattern2 + option
+                    if pattern1 == full_pattern:
+                        return True
+                        
+            # 将模式转换为正则表达式友好的格式
+            pattern1 = pattern1.replace('*', '[^/]+').replace('?', '.?')
+            pattern2 = pattern2.replace('*', '[^/]+').replace('?', '.?')
+            
+            # 如果pattern2包含选项，需要特殊处理
+            if '(' in pattern2:
+                return bool(re.match(f"^{pattern2}$", pattern1))
+                
+            # 检查是否存在包含关系
+            return bool(re.match(f"^{pattern2}$", pattern1))
         except:
             return False
 
