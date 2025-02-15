@@ -27,7 +27,6 @@ WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/
 #     "SKK_IP_Reject": "https://ruleset.skk.moe/List/ip/reject.conf"
 # }
 FILTER_SOURCES = {
-    "Manual_AD":"https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Ad_All.list",
     "AntiAD":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/AntiAD.list",
     "Advertising": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Advertising/Advertising.list"
 }
