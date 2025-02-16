@@ -1,17 +1,17 @@
 # 自建重写广告合集
 
 ## 更新时间
-2025-02-16 12:48:48 (北京时间)
+2025-02-16 13:25:25 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
 - Url-Rewrite 规则数量：2793
-- Script 规则数量：550
+- Script 规则数量：537
 - General 规则数量：2
 - Rule 规则数量：361
 - Url Rewrite 规则数量：60
 - Mitm 规则数量：0
-- Host 规则数量：1368
+- Host 规则数量：1365
 - Body Rewrite 规则数量：21
 - Map Local 规则数量：122
 - Header Rewrite 规则数量：2
@@ -27,7 +27,5 @@
 - chxm去广告: https://raw.githubusercontent.com/chxm1023/Advertising/main/AppAd.conf
 - 墨鱼去开屏V2.0: https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/StartUp.conf
 - 去广告重写: https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/chongxie.txt
-- YouTube去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/Youtube%20%E5%8E%BB%E5%B9%BF%E5%91%8A%20(%E4%B8%8D%E5%8E%BB%E8%B4%B4%E7%89%87).official.sgmodule
-- YouTube双语翻译: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/YouTube%E7%BF%BB%E8%AF%91.beta.sgmodule
 - 网易云音乐去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
 - 小黑盒去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/%E5%B0%8F%E9%BB%91%E7%9B%92%E5%8E%BB%E5%B9%BF%E5%91%8A.sgmodule
