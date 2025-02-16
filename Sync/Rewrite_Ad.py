@@ -35,11 +35,11 @@ class RuleProcessor:
         self.config = config
         # 定义reject规则优先级
         self.REJECT_PRIORITY = {
-            'reject-dict': 1,
-            'reject-array': 2,
-            'reject-200': 3,
-            'reject-img': 4,
-            'reject': 5
+            'reject': 1,
+            'reject-200': 2,
+            'reject-dict': 3,
+            'reject-array': 4,
+            'reject-img': 5
         }
         # 定义script规则类型
         self.SCRIPT_TYPES = {
