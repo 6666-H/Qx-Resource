@@ -120,25 +120,35 @@ if (typeof $argument != 'undefined') {
         $.log('✅ 检测到 QuanX 环境')
         const network = $environment.network
         const ssid = $environment.ssid
+        const cellular = $environment.cellular || {}
         
         // 添加更详细的环境信息日志
         $.log('📱 完整环境信息:', safeStringify($environment))
         $.log('🌐 网络环境:', network)
         $.log('📡 SSID:', ssid)
+        $.log('📱 蜂窝信息:', safeStringify(cellular))
         
-        // 添加更严格的网络状态判断
+        // 改进的网络状态判断逻辑
         if (ssid && ssid.length > 0) {
+            // 有 SSID 说明是 WiFi
             currentState.type = 'WiFi'
             currentState.ssid = ssid
-        } else if (network && network.includes('cellular')) {
+        } else if (cellular && cellular.carrierName && cellular.carrierName !== '--') {
+            // 有运营商信息说明是蜂窝网络
             currentState.type = 'Cellular'
-        } else if (!network || network === '') {
+            currentState.carrier = cellular.carrierName
+            currentState.radio = cellular.currentRadioAccessTechnology
+        } else if (cellular && cellular.currentRadioAccessTechnology) {
+            // 备用判断：有网络制式信息也认为是蜂窝网络
+            currentState.type = 'Cellular'
+            currentState.radio = cellular.currentRadioAccessTechnology
+        } else {
+            // 其他情况认为是断网
             currentState.type = 'None'
             $.log('⚠️ 未检测到任何网络连接')
-        } else {
-            $.log('⚠️ 未知的网络状态:', network)
-            currentState.type = 'Unknown'
         }
+        
+        $.log('🔄 网络状态判断结果:', safeStringify(currentState))
     } else {
         $.log('❌ 不支持的运行环境')
         throw new Error('当前环境不支持网络监控')
@@ -150,7 +160,8 @@ if (typeof $argument != 'undefined') {
     // 对比网络变化
     $.log('🔄 开始对比网络状态变化...')
     if (lastNetworkState.type !== currentState.type || 
-        (currentState.type === 'WiFi' && lastNetworkState.ssid !== currentState.ssid)) {
+        (currentState.type === 'WiFi' && lastNetworkState.ssid !== currentState.ssid) ||
+        (currentState.type === 'Cellular' && lastNetworkState.carrier !== currentState.carrier)) {
         
         $.log('⚠️ 检测到网络状态发生变化')
         
