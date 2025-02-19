@@ -46,8 +46,6 @@ function safeStringify(obj, indent = 2) {
             if (typeof value === 'object' && value !== null) {
                 if (cache.includes(value)) return '[Circular]';
                 cache.push(value);
-            } else if (typeof value === 'function') {
-                return '[Function]';
             }
             return value;
         },
@@ -55,13 +53,6 @@ function safeStringify(obj, indent = 2) {
     );
     cache = null;
     return retVal;
-}
-
-let arg
-if (typeof $argument != 'undefined') {
-    arg = Object.fromEntries($argument.split('&').map(item => item.split('=')))
-} else {
-    arg = {}
 }
 
 !(async () => {
@@ -77,65 +68,42 @@ if (typeof $argument != 'undefined') {
         ssid: ''
     }
 
+    // 检测 Loon 环境
     if (typeof $network !== 'undefined') {
         const v4 = $network.v4 || {}
         const wifi = $network.wifi || {}
+        const cellular = $network.cellular || {}
         
-        if (wifi.ssid) {
+        $.log('📱 网络信息:', safeStringify({v4, wifi, cellular}))
+        
+        if (wifi && wifi.ssid) {
             currentState.type = 'WiFi'
             currentState.ssid = wifi.ssid
+            currentState.bssid = wifi.bssid
             if (typeof wifi.strength === 'number') {
                 currentState.signalStrength = wifi.strength
                 currentState.signalLevel = evaluateSignalStrength(wifi.strength)
             }
-        } else if (v4.primaryAddress) {
+        } else if (cellular && (cellular.carrier || cellular.radio)) {
             currentState.type = 'Cellular'
-            if ($network.cellular) {
-                const cellular = $network.cellular
-                currentState.carrier = cellular.carrier
-                currentState.radio = cellular.radio
-                currentState.radioType = getRadioType(cellular.radio)
-                if (typeof cellular.strength === 'number') {
-                    currentState.signalStrength = cellular.strength
-                    currentState.signalLevel = evaluateSignalStrength(cellular.strength)
-                }
+            currentState.carrier = cellular.carrier
+            currentState.radio = cellular.radio
+            currentState.radioType = getRadioType(cellular.radio)
+            if (typeof cellular.strength === 'number') {
+                currentState.signalStrength = cellular.strength
+                currentState.signalLevel = evaluateSignalStrength(cellular.strength)
             }
-        } else {
-            currentState.type = 'None'
-        }
-        
-    } else if (typeof $environment !== 'undefined') {
-        const network = $environment.network
-        const ssid = $environment.ssid
-        const cellular = $environment.cellular || {}
-        
-        if (ssid && ssid.length > 0) {
-            currentState.type = 'WiFi'
-            currentState.ssid = ssid
-            if ($environment.wifi && typeof $environment.wifi.strength === 'number') {
-                currentState.signalStrength = $environment.wifi.strength
-                currentState.signalLevel = evaluateSignalStrength($environment.wifi.strength)
-            }
-        } else if (cellular && (cellular.carrierName || cellular.currentRadioAccessTechnology)) {
-            currentState.type = 'Cellular'
-            if (cellular.carrierName && cellular.carrierName !== '--') {
-                currentState.carrier = cellular.carrierName
-            }
-            if (cellular.currentRadioAccessTechnology) {
-                currentState.radio = cellular.currentRadioAccessTechnology
-                currentState.radioType = getRadioType(cellular.currentRadioAccessTechnology)
-            }
-            if (typeof cellular.signalStrength === 'number') {
-                currentState.signalStrength = cellular.signalStrength
-                currentState.signalLevel = evaluateSignalStrength(cellular.signalStrength)
-            }
+        } else if (v4 && v4.primaryAddress) {
+            currentState.type = 'Other'
+            currentState.ip = v4.primaryAddress
         } else {
             currentState.type = 'None'
         }
     } else {
-        throw new Error('当前环境不支持网络监控')
+        throw new Error('无法获取网络状态信息')
     }
 
+    // 检查网络状态变化
     if (lastNetworkState.type !== currentState.type || 
         (currentState.type === 'WiFi' && lastNetworkState.ssid !== currentState.ssid) ||
         (currentState.type === 'Cellular' && (
@@ -178,25 +146,28 @@ if (typeof $argument != 'undefined') {
                 break
             default:
                 subtitle = `网络类型: ${currentState.type}`
-                body = `网络状态未知`
+                if (currentState.ip) {
+                    body = `IP: ${currentState.ip}`
+                } else {
+                    body = `网络状态未知`
+                }
         }
 
         $.msg(title, subtitle, body)
         $.setjson(currentState, NAME)
-    } else {
-        // 仅当信号强度变化时更新通知
-        if (lastNetworkState.signalLevel !== currentState.signalLevel) {
-            let title = '信号强度更新'
-            let subtitle = currentState.type === 'WiFi' ? 
-                `WiFi: ${currentState.ssid}` : 
-                `${currentState.radioType || '蜂窝数据'}`;
-            let body = `信号强度: ${currentState.signalLevel}`
-            
-            $.msg(title, subtitle, body)
-        }
+    } else if (lastNetworkState.signalLevel !== currentState.signalLevel) {
+        // 仅信号强度变化时更新通知
+        let title = '信号强度更新'
+        let subtitle = currentState.type === 'WiFi' ? 
+            `WiFi: ${currentState.ssid}` : 
+            `${currentState.radioType || '蜂窝数据'}`;
+        let body = `信号强度: ${currentState.signalLevel}`
         
+        $.msg(title, subtitle, body)
         $.setjson(currentState, NAME)
     }
+    
+    $.log('==================== 网络监控结束 ====================')
 })()
 .catch((e) => {
     $.logErr(e)
