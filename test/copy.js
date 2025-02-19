@@ -22,6 +22,7 @@ if (typeof $argument != 'undefined') {
     }
 
      $.log('当前网络:', typeof $network)
+     $.log('当前网络2:', typeof $environment)
     if (typeof $network !== 'undefined') {
         // Surge/Loon
         currentState.type = $network.v4.primaryInterface || 'unknown'
