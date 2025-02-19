@@ -1,6 +1,23 @@
 const $ = new Env('Network Monitor')
 const NAME = 'network-monitor'
 
+// 网络制式的映射关系
+const RADIO_TYPES = {
+    'CTRadioAccessTechnologyLTE': '4G',
+    'CTRadioAccessTechnologyNR': '5G',
+    'CTRadioAccessTechnologyWCDMA': '3G',
+    'CTRadioAccessTechnologyeHRPD': '3G',
+    'CTRadioAccessTechnologyCDMA1x': '2G',
+    'CTRadioAccessTechnologyEdge': '2G',
+    'CTRadioAccessTechnologyGPRS': '2G'
+}
+
+// 获取友好的网络制式名称
+function getRadioType(radio) {
+    if (!radio) return '未知'
+    return RADIO_TYPES[radio] || radio
+}
+
 // 安全的对象打印函数
 function safeStringify(obj, indent = 2) {
     let cache = [];
@@ -110,6 +127,7 @@ if (typeof $argument != 'undefined') {
                 $.log('📶 蜂窝网络详情:', safeStringify(cellular))
                 currentState.carrier = cellular.carrier
                 currentState.radio = cellular.radio
+                currentState.radioType = getRadioType(cellular.radio)
             }
         } else {
             $.log('❌ 未检测到有效网络连接')
@@ -133,15 +151,16 @@ if (typeof $argument != 'undefined') {
             // 有 SSID 说明是 WiFi
             currentState.type = 'WiFi'
             currentState.ssid = ssid
-        } else if (cellular && cellular.carrierName && cellular.carrierName !== '--') {
-            // 有运营商信息说明是蜂窝网络
+        } else if (cellular && (cellular.carrierName || cellular.currentRadioAccessTechnology)) {
+            // 蜂窝网络
             currentState.type = 'Cellular'
-            currentState.carrier = cellular.carrierName
-            currentState.radio = cellular.currentRadioAccessTechnology
-        } else if (cellular && cellular.currentRadioAccessTechnology) {
-            // 备用判断：有网络制式信息也认为是蜂窝网络
-            currentState.type = 'Cellular'
-            currentState.radio = cellular.currentRadioAccessTechnology
+            if (cellular.carrierName && cellular.carrierName !== '--') {
+                currentState.carrier = cellular.carrierName
+            }
+            if (cellular.currentRadioAccessTechnology) {
+                currentState.radio = cellular.currentRadioAccessTechnology
+                currentState.radioType = getRadioType(cellular.currentRadioAccessTechnology)
+            }
         } else {
             // 其他情况认为是断网
             currentState.type = 'None'
@@ -161,7 +180,10 @@ if (typeof $argument != 'undefined') {
     $.log('🔄 开始对比网络状态变化...')
     if (lastNetworkState.type !== currentState.type || 
         (currentState.type === 'WiFi' && lastNetworkState.ssid !== currentState.ssid) ||
-        (currentState.type === 'Cellular' && lastNetworkState.carrier !== currentState.carrier)) {
+        (currentState.type === 'Cellular' && (
+            lastNetworkState.carrier !== currentState.carrier ||
+            lastNetworkState.radioType !== currentState.radioType
+        ))) {
         
         $.log('⚠️ 检测到网络状态发生变化')
         
@@ -176,13 +198,17 @@ if (typeof $argument != 'undefined') {
                 body = `当前连接: ${currentState.ssid}`
                 break
             case 'Cellular':
-                subtitle = `已切换至蜂窝数据`
-                if (currentState.carrier) {
-                    body = `运营商: ${currentState.carrier}`
-                    if (currentState.radio) {
-                        body += `\n网络制式: ${currentState.radio}`
-                    }
+                let details = []
+                if (currentState.radioType) {
+                    subtitle = `已切换至 ${currentState.radioType} 网络`
+                    details.push(`网络制式: ${currentState.radioType}`)
+                } else {
+                    subtitle = `已切换至蜂窝数据`
                 }
+                if (currentState.carrier) {
+                    details.push(`运营商: ${currentState.carrier}`)
+                }
+                body = details.join('\n')
                 break
             case 'None':
                 subtitle = `网络已断开`
