@@ -21,22 +21,6 @@ const SIGNAL_LEVELS = {
     BAD: '很差'
 }
 
-// 网速测试配置
-const SPEED_TEST = {
-    testUrls: [
-        'https://speed.cloudflare.com/__down?bytes=10000000',
-        'https://cachefly.cachefly.net/10mb.test',
-        'https://download.microsoft.com/download/C/3/E/C3E57708-73CC-46C2-B511-6799E1D8E3F8/WindowsUpdateBox.exe'
-    ],
-    testSize: 10000000, // 10MB
-    interval: 30 * 60 * 1000, // 30分钟测试一次
-    threshold: {
-        slow: 1,    // 低于1Mbps判定为慢
-        medium: 5,  // 1-5Mbps判定为一般
-        fast: 10    // 高于10Mbps判定为快
-    }
-}
-
 // 获取友好的网络制式名称
 function getRadioType(radio) {
     if (!radio) return '未知'
@@ -51,79 +35,6 @@ function evaluateSignalStrength(strength) {
     if (strength >= -75) return SIGNAL_LEVELS.FAIR;
     if (strength >= -85) return SIGNAL_LEVELS.POOR;
     return SIGNAL_LEVELS.BAD;
-}
-
-// 评估网速
-function evaluateSpeed(speed) {
-    if (speed < SPEED_TEST.threshold.slow) return '很慢'
-    if (speed < SPEED_TEST.threshold.medium) return '一般'
-    if (speed < SPEED_TEST.threshold.fast) return '较快'
-    return '很快'
-}
-
-// 格式化速度显示
-function formatSpeed(speed) {
-    if (speed < 1) {
-        return (speed * 1000).toFixed(1) + ' Kbps'
-    }
-    return speed.toFixed(1) + ' Mbps'
-}
-
-// 网速测试函数
-async function testNetworkSpeed() {
-    for (const url of SPEED_TEST.testUrls) {
-        try {
-            const result = await doSpeedTest(url)
-            if (result.speed > 0) {
-                return result
-            }
-        } catch (e) {
-            $.log(`测速服务器 ${url} 失败: ${e.message}`)
-            continue
-        }
-    }
-    
-    return {
-        speed: 0,
-        duration: 0,
-        status: 'error',
-        error: '所有测速服务器均失败'
-    }
-}
-
-async function doSpeedTest(url) {
-    const startTime = new Date().getTime()
-    const response = await $.http.get({
-        url: url,
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15'
-        },
-        timeout: 10000 // 10秒超时
-    })
-    const endTime = new Date().getTime()
-    const duration = (endTime - startTime) / 1000
-    
-    let bytes = 0
-    if (response.bodyBytes) {
-        bytes = response.bodyBytes.length
-    } else if (response.body) {
-        bytes = response.body.length
-    } else if (typeof response === 'string') {
-        bytes = response.length
-    }
-    
-    if (bytes === 0) {
-        throw new Error('无法获取响应大小')
-    }
-    
-    const speed = (bytes / duration / 1024 / 1024).toFixed(2)
-    $.log(`测速详情: 大小=${bytes}字节, 耗时=${duration}秒, 速度=${speed}Mbps`)
-    
-    return {
-        speed: parseFloat(speed),
-        duration: duration,
-        status: evaluateSpeed(speed)
-    }
 }
 
 // 安全的对象打印函数
@@ -149,10 +60,8 @@ function safeStringify(obj, indent = 2) {
 let arg
 if (typeof $argument != 'undefined') {
     arg = Object.fromEntries($argument.split('&').map(item => item.split('=')))
-    $.log('⚙️ 获取到传入参数:', safeStringify(arg))
 } else {
     arg = {}
-    $.log('⚙️ 未检测到传入参数')
 }
 
 !(async () => {
@@ -168,14 +77,9 @@ if (typeof $argument != 'undefined') {
         ssid: ''
     }
 
-    $.log('🔍 开始检测当前网络环境...')
     if (typeof $network !== 'undefined') {
-        $.log('✅ 检测到 Surge/Loon 环境')
         const v4 = $network.v4 || {}
         const wifi = $network.wifi || {}
-        
-        $.log('📶 WiFi 信息:', safeStringify(wifi))
-        $.log('🌐 v4 网络信息:', safeStringify(v4))
         
         if (wifi.ssid) {
             currentState.type = 'WiFi'
@@ -201,15 +105,9 @@ if (typeof $argument != 'undefined') {
         }
         
     } else if (typeof $environment !== 'undefined') {
-        $.log('✅ 检测到 QuanX 环境')
         const network = $environment.network
         const ssid = $environment.ssid
         const cellular = $environment.cellular || {}
-        
-        $.log('📱 完整环境信息:', safeStringify($environment))
-        $.log('🌐 网络环境:', network)
-        $.log('📡 SSID:', ssid)
-        $.log('📱 蜂窝信息:', safeStringify(cellular))
         
         if (ssid && ssid.length > 0) {
             currentState.type = 'WiFi'
@@ -235,19 +133,7 @@ if (typeof $argument != 'undefined') {
             currentState.type = 'None'
         }
     } else {
-        $.log('❌ 不支持的运行环境')
         throw new Error('当前环境不支持网络监控')
-    }
-
-    // 进行网速测试
-    $.log('🚀 开始测试网速...')
-    const speedResult = await testNetworkSpeed()
-    if (speedResult.error) {
-        $.log('❌ 网速测试失败:', speedResult.error)
-    } else {
-        $.log('✅ 网速测试完成:', formatSpeed(speedResult.speed))
-        currentState.speed = speedResult.speed
-        currentState.speedStatus = speedResult.status
     }
 
     if (lastNetworkState.type !== currentState.type || 
@@ -268,10 +154,6 @@ if (typeof $argument != 'undefined') {
                 if (currentState.signalLevel) {
                     wifiDetails.push(`信号强度: ${currentState.signalLevel}`)
                 }
-                if (currentState.speed) {
-                    wifiDetails.push(`当前网速: ${formatSpeed(currentState.speed)}`)
-                    wifiDetails.push(`速度评级: ${currentState.speedStatus}`)
-                }
                 body = wifiDetails.join('\n')
                 break
             case 'Cellular':
@@ -288,10 +170,6 @@ if (typeof $argument != 'undefined') {
                 if (currentState.signalLevel) {
                     details.push(`信号强度: ${currentState.signalLevel}`)
                 }
-                if (currentState.speed) {
-                    details.push(`当前网速: ${formatSpeed(currentState.speed)}`)
-                    details.push(`速度评级: ${currentState.speedStatus}`)
-                }
                 body = details.join('\n')
                 break
             case 'None':
@@ -306,29 +184,19 @@ if (typeof $argument != 'undefined') {
         $.msg(title, subtitle, body)
         $.setjson(currentState, NAME)
     } else {
-        // 即使网络未变化，也更新速度和信号强度信息
-        let title = '网络状态更新'
-        let subtitle = currentState.type === 'WiFi' ? 
-            `WiFi: ${currentState.ssid}` : 
-            `${currentState.radioType || '蜂窝数据'}`;
-        let details = []
-        
-        if (currentState.signalLevel) {
-            details.push(`信号强度: ${currentState.signalLevel}`)
-        }
-        if (currentState.speed) {
-            details.push(`当前网速: ${formatSpeed(currentState.speed)}`)
-            details.push(`速度评级: ${currentState.speedStatus}`)
-        }
-        
-        if (details.length > 0) {
-            $.msg(title, subtitle, details.join('\n'))
+        // 仅当信号强度变化时更新通知
+        if (lastNetworkState.signalLevel !== currentState.signalLevel) {
+            let title = '信号强度更新'
+            let subtitle = currentState.type === 'WiFi' ? 
+                `WiFi: ${currentState.ssid}` : 
+                `${currentState.radioType || '蜂窝数据'}`;
+            let body = `信号强度: ${currentState.signalLevel}`
+            
+            $.msg(title, subtitle, body)
         }
         
         $.setjson(currentState, NAME)
     }
-    
-    $.log('==================== 网络监控结束 ====================')
 })()
 .catch((e) => {
     $.logErr(e)
