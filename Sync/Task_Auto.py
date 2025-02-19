@@ -7,8 +7,8 @@ from pathlib import Path
 import json
 
 # 配置项
-REPO_PATH = "Scripts"  
-OUTPUT_FILE = "merged_scripts.json"
+REPO_PATH = "Task"  
+OUTPUT_FILE = "Auto_Task.json"
 README_PATH = "README.md"
 
 # 固定的基础信息
