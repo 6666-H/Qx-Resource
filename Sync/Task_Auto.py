@@ -8,7 +8,7 @@ import json
 
 # 配置项
 REPO_PATH = "Task"  
-OUTPUT_FILE = "merged_scripts.json"
+OUTPUT_FILE = "Auto_Task.json"
 README_PATH = "README.md"
 
 # JSON 源列表
@@ -60,14 +60,14 @@ def download_and_merge_json():
 def update_readme(item_count):
     """更新 README.md"""
     beijing_time = get_beijing_time()
-    content = f"""# 脚本合集
+    content = f"""# 自动化合集
 
 ## 更新时间
 {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 
 ## 说明
-本合集包含多个来源的脚本整合。
-当前脚本数量：{item_count}
+本合集包含多个来源的自动化整合。
+当前自动化数量：{item_count}
 
 ## 数据来源
 {chr(10).join([f'- {name}: {url}' for name, url in JSON_SOURCES.items()])}
