@@ -7,8 +7,8 @@ from pathlib import Path
 import json
 
 # 配置项
-REPO_PATH = "Task"  
-OUTPUT_FILE = "Auto_Task.json"
+REPO_PATH = "Scripts"  
+OUTPUT_FILE = "merged_scripts.json"
 README_PATH = "README.md"
 
 # JSON 源列表
@@ -32,8 +32,12 @@ def download_and_merge_json():
     """下载并合并 JSON 数据"""
     beijing_time = get_beijing_time()
     
-    # 存储所有 JSON 数据
-    merged_data = {}
+    # 创建基础结构
+    merged_data = {
+        "name": "自建任务合集",
+        "description": "二十年没去过星巴克的自建任务集",
+        "task": []
+    }
     
     # 下载和处理 JSON
     for name, url in JSON_SOURCES.items():
@@ -43,31 +47,35 @@ def download_and_merge_json():
             response.raise_for_status()
             json_data = response.json()
             
-            # 合并数据
-            merged_data.update(json_data)
+            # 如果源数据包含 task 数组,则合并
+            if "task" in json_data and isinstance(json_data["task"], list):
+                merged_data["task"].extend(json_data["task"])
             
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
+    
+    # 去重任务列表(基于完整字符串比较)
+    merged_data["task"] = list(dict.fromkeys(merged_data["task"]))
     
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(merged_data, f, ensure_ascii=False, indent=2)
     
-    print(f"Successfully merged JSON data to {OUTPUT_FILE}")
-    return len(merged_data)
+    print(f"Successfully merged {len(merged_data['task'])} tasks to {OUTPUT_FILE}")
+    return len(merged_data["task"])
 
-def update_readme(item_count):
+def update_readme(task_count):
     """更新 README.md"""
     beijing_time = get_beijing_time()
-    content = f"""# 自动化合集
+    content = f"""# 自动任务合集
 
 ## 更新时间
 {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 
 ## 说明
-本合集包含多个来源的自动化整合。
-当前自动化数量：{item_count}
+自建任务合集
+当前任务数量：{task_count}
 
 ## 数据来源
 {chr(10).join([f'- {name}: {url}' for name, url in JSON_SOURCES.items()])}
@@ -85,7 +93,7 @@ def git_push():
         repo = git.Repo(REPO_PATH)
         repo.git.add(all=True)
         beijing_time = get_beijing_time()
-        repo.index.commit(f"Update scripts: {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
+        repo.index.commit(f"Update tasks: {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
         origin = repo.remote(name='origin')
         origin.push()
         print("Successfully pushed to repository")
@@ -94,8 +102,8 @@ def git_push():
 
 def main():
     setup_directory()
-    item_count = download_and_merge_json()
-    update_readme(item_count)
+    task_count = download_and_merge_json()
+    update_readme(task_count)
     git_push()
 
 if __name__ == "__main__":
