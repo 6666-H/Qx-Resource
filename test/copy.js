@@ -21,38 +21,78 @@ if (typeof $argument != 'undefined') {
         ssid: ''
     }
 
-     $.log('当前网络:', typeof $network)
-     $.log('当前网络2:', typeof $environment)
     if (typeof $network !== 'undefined') {
         // Surge/Loon
-        currentState.type = $network.v4.primaryInterface || 'unknown'
-        currentState.ssid = $network.wifi?.ssid || ''
+        const v4 = $network.v4 || {}
+        const wifi = $network.wifi || {}
+        
+        // 判断网络类型
+        if (wifi.ssid) {
+            currentState.type = 'WiFi'
+            currentState.ssid = wifi.ssid
+        } else if (v4.primaryAddress) {
+            // 有IP但没有SSID，判定为蜂窝网络
+            currentState.type = 'Cellular'
+            // 尝试获取蜂窝网络信息
+            if ($network.cellular) {
+                const cellular = $network.cellular
+                currentState.carrier = cellular.carrier
+                currentState.radio = cellular.radio
+            }
+        } else {
+            currentState.type = 'None'
+        }
+        
     } else if (typeof $environment !== 'undefined') {
         // QuanX
-        currentState.ssid = $environment.ssid
-        currentState.type = $environment.network
+        const network = $environment.network
+        const ssid = $environment.ssid
+        
+        if (ssid) {
+            currentState.type = 'WiFi'
+            currentState.ssid = ssid
+        } else if (network && network.includes('cellular')) {
+            currentState.type = 'Cellular'
+        } else {
+            currentState.type = 'None'
+        }
     } else {
         throw new Error('当前环境不支持网络监控')
     }
 
+    $.log('当前网络状态:', JSON.stringify(currentState))
+    $.log('上次网络状态:', JSON.stringify(lastNetworkState))
+
     // 对比网络变化
     if (lastNetworkState.type !== currentState.type || 
-        (currentState.ssid && lastNetworkState.ssid !== currentState.ssid)) {
+        (currentState.type === 'WiFi' && lastNetworkState.ssid !== currentState.ssid)) {
         
         // 生成通知消息
         let title = '网络状态变更'
         let subtitle = ''
         let body = ''
 
-        if (currentState.ssid) {
-            subtitle = `已切换至 WiFi`
-            body = `当前连接: ${currentState.ssid}`
-        } else if (currentState.type.includes('cellular')) {
-            subtitle = `已切换至蜂窝数据`
-            body = `网络类型: ${currentState.type}`
-        } else {
-            subtitle = `网络类型: ${currentState.type}`
-            body = `网络可能已断开`
+        switch (currentState.type) {
+            case 'WiFi':
+                subtitle = `已切换至 WiFi`
+                body = `当前连接: ${currentState.ssid}`
+                break
+            case 'Cellular':
+                subtitle = `已切换至蜂窝数据`
+                if (currentState.carrier) {
+                    body = `运营商: ${currentState.carrier}`
+                    if (currentState.radio) {
+                        body += `\n网络制式: ${currentState.radio}`
+                    }
+                }
+                break
+            case 'None':
+                subtitle = `网络已断开`
+                body = `请检查网络连接`
+                break
+            default:
+                subtitle = `网络类型: ${currentState.type}`
+                body = `网络状态未知`
         }
 
         // 发送通知
@@ -61,9 +101,6 @@ if (typeof $argument != 'undefined') {
         // 保存当前状态
         $.setjson(currentState, NAME)
     }
-
-    $.log('当前网络状态:', JSON.stringify(currentState))
-    $.log('上次网络状态:', JSON.stringify(lastNetworkState))
 
 })()
 .catch((e) => {
