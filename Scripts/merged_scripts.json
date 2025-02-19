@@ -1,6 +1,6 @@
 {
   "name": "自建任务合集",
-  "description": "二十年没去过星巴克的自建任务集",
+  "description": "二十年没去过星巴克的任务合集",
   "task": [
     "event-interaction https://raw.githubusercontent.com/getsomecat/Qx/main/Net_Speed.js, tag=节点网速查询, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Speedtest.png",
     "event-interaction https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/Scripts/streaming-ui-check.js, tag=媒体解锁查询, img-url=checkmark.seal.system",
