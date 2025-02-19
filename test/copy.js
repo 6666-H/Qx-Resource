@@ -320,6 +320,149 @@ function maskAddr(addr) {
     })
 }
 
-// Env 类
-function Env(t,e){class s{constructor(t){this.env=t}send(t,e="GET"){t="string"==typeof t?{url:t}:t;let s=this.get;return"POST"===e&&(s=this.post),new Promise((e,a)=>{s.call(this,t,(t,s,r)=>{t?a(t):e(s)})})}get(t){return this.send.call(this.env,t)}post(t){return this.send.call(this.env,t,"POST")}}return new class{constructor(t,e){this.name=t,this.http=new s(this),this.data=null,this.dataFile="box.dat",this.logs=[],this.isMute=!1,this.isNeedRewrite=!1,this.logSeparator="\n",this.encoding="utf-8",this.startTime=(new Date).getTime(),Object.assign(this,e),this.log("",`🔔${this.name}, 开始!`)}getEnv(){return"undefined"!=typeof $environment&&$environment["surge-version"]?"Surge":"undefined"!=typeof $environment&&$environment["stash-version"]?"Stash":"undefined"!=typeof module&&module.exports?"Node.js":"undefined"!=typeof $task?"Quantumult X":"undefined"!=typeof $loon?"Loon":"undefined"!=typeof $rocket?"Shadowrocket":void 0}isNode(){return"Node.js"===this.getEnv()}isQuanX(){return"Quantumult X"===this.getEnv()}isSurge(){return"Surge"===this.getEnv()}isLoon(){return"Loon"===this.getEnv()}isShadowrocket(){return"Shadowrocket"===this.getEnv()}isStash(){return"Stash"===this.getEnv()}toObj(t,e=null){try{return JSON.parse(t)}catch{return e}}toStr(t,e=null){try{return JSON.stringify(t)}catch{return e}}getjson(t,e){let s=e;const a=this.getdata(t);if(a)try{s=JSON.parse(this.getdata(t))}catch{}return s}setjson(t,e){try{return this.setdata(JSON.stringify(t),e)}catch{return!1}}getScript(t){return new Promise(e=>{this.get({url:t},(t,s,a)=>e(a))})}runScript(t,e){return new Promise(s=>{let a=this.getdata("@chavy_boxjs_userCfgs.httpapi");a=a?a.replace(/\n/g,"").trim():a;let r=this.getdata("@chavy_boxjs_userCfgs.httpapi_timeout");r=r?1*r:20,r=e&&e.timeout?e.timeout:r;const[i,o]=a.split("@"),n={url:`http://${o}/v1/scripting/evaluate`,body:{script_text:t,mock_type:"cron",timeout:r},headers:{"X-Key":i,Accept:"*/*"},timeout:r};this.post(n,(t,e,a)=>s(a))}).catch(t=>this.logErr(t))}loaddata(){if(!this.isNode())return{};{this.fs=this.fs?this.fs:require("fs"),this.path=this.path?this.path:require("path");const t=this.path.resolve(this.dataFile),e=this.path.resolve(process.cwd(),this.dataFile),s=this.fs.existsSync(t),a=!s&&this.fs.existsSync(e);if(!s&&!a)return{};{const a=s?t:e;try{return JSON.parse(this.fs.readFileSync(a))}catch(t){return{}}}}}writedata(){if(this.isNode()){this.fs=this.fs?this.fs:require("fs"),this.path=this.path?this.path:require("path");const t=this.path.resolve(this.dataFile),e=this.path.resolve(process.cwd(),this.dataFile),s=this.fs.existsSync(t),a=!s&&this.fs.existsSync(e),r=JSON.stringify(this.data);s?this.fs.writeFileSync(t,r):a?this.fs.writeFileSync(e,r):this.fs.writeFileSync(t,r)}}lodash_get(t,e,s){const a=e.replace(/\[(\d+)\]/g,".$1").split(".");let r=t;for(const t of a)if(r=Object(r)[t],void 0===r)return s;return r}lodash_set(t,e,s){return Object(t)!==t?t:(Array.isArray(e)||(e=e.toString().match(/[^.[\]]+/g)||[]),e.slice(0,-1).reduce((t,s,a)=>Object(t[s])===t[s]?t[s]:t[s]=Math.abs(e[a+1])>>0==+e[a+1]?[]:{},t)[e[e.length-1]]=s,t)}getdata(t){let e=this.getval(t);if(/^@/.test(t)){const[,s,a]=/^@(.*?)\.(.*?)$/.exec(t),r=s?this.getval(s):"";if(r)try{const t=JSON.parse(r);e=t?this.lodash_get(t,a,""):e}catch(t){e=""}}return e}setdata(t,e){let s=!1;if(/^@/.test(e)){const[,a,r]=/^@(.*?)\.(.*?)$/.exec(e),i=this.getval(a),o=a?"null"===i?null:i||"{}":"{}";try{const e=JSON.parse(o);this.lodash_set(e,r,t),s=this.setval(JSON.stringify(e),a)}catch(e){const i={};this.lodash_set(i,r,t),s=this.setval(JSON.stringify(i),a)}}else s=this.setval(t,e);return s}getval(t){return this.isSurge()||this.isLoon()||this.isStash()||this.isShadowrocket()?$persistentStore.read(t):this.isQuanX()?$prefs.valueForKey(t):this.isNode()?(this.data=this.loaddata(),this.data[t]):this.data&&this.data[t]||null}setval(t,e){return this.isSurge()||this.isLoon()||this.isStash()||this.isShadowrocket()?$persistentStore.write(t,e):this.isQuanX()?$prefs.setValueForKey(t,e):this.isNode()?(this.data=this.loaddata(),this.data[e]=t,this.writedata(),!0):this.data&&this.data[e]||null}msg(e=t,s="",a="",r){const i=t=>!t||!this.isLoon()&&this.isSurge()?t:"string"==typeof t?this.isLoon()?t:this.isQuanX()?{"open-url":t}:void 0:"object"==typeof t&&(t["open-url"]||t["media-url"])?this.isLoon()?t["open-url"]:this.isQuanX()?t:void 0:void 0;$.isMute||(this.isSurge()||this.isLoon()||this.isStash()||this.isShadowrocket()?$notification.post(e,s,a,i(r)):this.isQuanX()&&$notify(e,s,a,i(r)));let o=["","==============\ud83d\udce3\u7cfb\u7edf\u901a\u77e5\ud83d\udce3=============="];o.push(e),s&&o.push(s),a&&o.push(a),console.log(o.join("\n"))}}(t,e)}
+function Env(name) {
+  // 日志函数
+  this.log = (...args) => {
+    if (args.length > 0) {
+      this.logs = [...this.logs, ...args]
+    }
+    console.log(args.join(this.logSeparator))
+  }
+
+  // 错误日志
+  this.logErr = (err, msg) => {
+    this.log('', `❗️${this.name}, 错误!`, err)
+  }
+
+  this.name = name
+  this.logs = []
+  this.isMute = false
+  this.isNeedRewrite = false
+  this.logSeparator = '\n'
+  this.startTime = new Date().getTime()
+  this.log('', `🔔 ${this.name}, 开始!`)
+
+  // 获取环境
+  this.getEnv = () => {
+    if (typeof $environment !== 'undefined') {
+      if ($environment['surge-version']) return 'Surge'
+      if ($environment['stash-version']) return 'Stash'
+    }
+    if (typeof module !== 'undefined') return 'Node.js'
+    if (typeof $task !== 'undefined') return 'Quantumult X'
+    if (typeof $loon !== 'undefined') return 'Loon'
+    if (typeof $rocket !== 'undefined') return 'Shadowrocket'
+    return 'unknown'
+  }
+
+  // 环境判断
+  this.isNode = () => this.getEnv() === 'Node.js'
+  this.isQuanX = () => this.getEnv() === 'Quantumult X'
+  this.isSurge = () => this.getEnv() === 'Surge'
+  this.isLoon = () => this.getEnv() === 'Loon'
+  this.isShadowrocket = () => this.getEnv() === 'Shadowrocket'
+  this.isStash = () => this.getEnv() === 'Stash'
+
+  // 数据处理
+  this.toObj = (str, defaultValue = null) => {
+    try {
+      return JSON.parse(str)
+    } catch {
+      return defaultValue
+    }
+  }
+
+  this.toStr = (obj, defaultValue = null) => {
+    try {
+      return JSON.stringify(obj)
+    } catch {
+      return defaultValue
+    }
+  }
+
+  // 数据存储
+  this.getjson = (key, defaultValue) => {
+    let val = this.getdata(key)
+    if (!val) return defaultValue
+    try {
+      return JSON.parse(val)
+    } catch {
+      return defaultValue
+    }
+  }
+
+  this.setjson = (val, key) => {
+    try {
+      return this.setdata(JSON.stringify(val), key)
+    } catch {
+      return false
+    }
+  }
+
+  // 数据获取与存储
+  this.getdata = (key) => {
+    if (this.isSurge() || this.isLoon() || this.isStash() || this.isShadowrocket()) {
+      return $persistentStore.read(key)
+    } else if (this.isQuanX()) {
+      return $prefs.valueForKey(key)
+    } else {
+      return null
+    }
+  }
+
+  this.setdata = (val, key) => {
+    if (this.isSurge() || this.isLoon() || this.isStash() || this.isShadowrocket()) {
+      return $persistentStore.write(val, key)
+    } else if (this.isQuanX()) {
+      return $prefs.setValueForKey(val, key)
+    } else {
+      return false
+    }
+  }
+
+  // HTTP 请求
+  this.get = (opts) => {
+    return new Promise((resolve, reject) => {
+      if (this.isQuanX()) {
+        $task.fetch(opts).then(
+          response => {
+            resolve(response)
+          },
+          reason => {
+            reject(reason)
+          }
+        )
+      } else if (this.isSurge() || this.isLoon() || this.isStash() || this.isShadowrocket()) {
+        $httpClient.get(opts, (err, resp, body) => {
+          if (err) reject(err)
+          else resolve({ status: resp.status, headers: resp.headers, body })
+        })
+      }
+    })
+  }
+
+  // 通知
+  this.msg = (title = name, subt = '', desc = '', opts = {}) => {
+    if (!this.isMute) {
+      if (this.isSurge() || this.isLoon() || this.isStash() || this.isShadowrocket()) {
+        $notification.post(title, subt, desc, opts)
+      } else if (this.isQuanX()) {
+        $notify(title, subt, desc, opts)
+      }
+    }
+    this.log('', '==============📣系统通知📣==============')
+    this.log(title)
+    if (subt) this.log(subt)
+    if (desc) this.log(desc)
+  }
+
+  this.done = (val = {}) => {
+    const endTime = new Date().getTime()
+    const costTime = (endTime - this.startTime) / 1000
+    this.log('', `🔔 ${this.name}, 结束! 🕛 ${costTime} 秒`)
+    if (this.isSurge() || this.isQuanX() || this.isLoon() || this.isStash() || this.isShadowrocket()) {
+      $done(val)
+    }
+  }
+}
 
