@@ -21,6 +21,7 @@ if (typeof $argument != 'undefined') {
         ssid: ''
     }
 
+     $.log('当前网络:', typeof $network)
     if (typeof $network !== 'undefined') {
         // Surge/Loon
         currentState.type = $network.v4.primaryInterface || 'unknown'
