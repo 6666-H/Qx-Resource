@@ -1,11 +1,11 @@
 # 国内分流
 
 ## 更新时间
-2025-02-16 10:55:07 (北京时间)
+2025-02-19 10:51:21 (北京时间)
 
 ## 规则说明
 本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
-当前规则数量：129258
+当前规则数量：128609
 
 ## 规则来源
 - GEOIP: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Direct.list
