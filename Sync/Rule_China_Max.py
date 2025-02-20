@@ -52,13 +52,14 @@ def standardize_rule(line):
     type_map = {
         'HOST': 'DOMAIN',
         'HOST-SUFFIX': 'DOMAIN-SUFFIX',
-        'HOST-KEYWORD': 'DOMAIN-KEYWORD'
+        'HOST-KEYWORD': 'DOMAIN-KEYWORD',
+        'HOST-WILDCARD': 'DOMAIN-WILDCARD'
     }
     rule_type = type_map.get(rule_type, rule_type)
 
-    # 对于IP-CIDR规则，保留规则类型但去除no-resolve选项
-    if rule_type in ['IP-CIDR', 'IP6-CIDR']:
-        if '/' not in content:
+    # 对于IP类规则，保留规则类型但去除no-resolve选项
+    if rule_type in ['IP-CIDR', 'IP6-CIDR', 'IP-ASN']:
+        if rule_type in ['IP-CIDR', 'IP6-CIDR'] and '/' not in content:
             content = f"{content}/{'32' if rule_type == 'IP-CIDR' else '128'}"
         return rule_type, content
 
@@ -67,12 +68,15 @@ def standardize_rule(line):
 def get_rule_priority(rule_type):
     """获取规则优先级"""
     priorities = {
-        'GEOIP': 1,
-        'DOMAIN': 2,
-        'DOMAIN-SUFFIX': 3,
+        'DOMAIN': 1,
+        'DOMAIN-SUFFIX': 2,
+        'DOMAIN-WILDCARD': 3,
         'DOMAIN-KEYWORD': 4,
-        'IP-CIDR': 5,
-        'IP6-CIDR': 6
+        'USER-AGENT': 5,
+        'IP-CIDR': 6,
+        'IP6-CIDR': 7,
+        'IP-ASN': 8,
+        'GEOIP': 9
     }
     return priorities.get(rule_type, 99)
 
@@ -88,12 +92,15 @@ def download_and_merge_rules():
     
     # 存储规则的字典，用于去重和分类
     rules_dict = {
-        'GEOIP': set(),
         'DOMAIN': set(),
         'DOMAIN-SUFFIX': set(),
+        'DOMAIN-WILDCARD': set(),
         'DOMAIN-KEYWORD': set(),
+        'USER-AGENT': set(),
         'IP-CIDR': set(),
-        'IP6-CIDR': set()
+        'IP6-CIDR': set(),
+        'IP-ASN': set(),
+        'GEOIP': set()
     }
     
     # 下载和处理规则
@@ -116,8 +123,20 @@ def download_and_merge_rules():
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(header)
         
-        # 按类型写入规则
-        for rule_type in ['DOMAIN', 'DOMAIN-SUFFIX','DOMAIN-WILDCARD' 'DOMAIN-KEYWORD', 'USER-AGENT','IP-CIDR', 'IP6-CIDR','GEOIP','IP-ASN']:
+        # 按照指定顺序写入规则
+        rule_types = [
+            'DOMAIN',
+            'DOMAIN-SUFFIX',
+            'DOMAIN-WILDCARD',
+            'DOMAIN-KEYWORD',
+            'USER-AGENT',
+            'IP-CIDR',
+            'IP6-CIDR',
+            'IP-ASN',
+            'GEOIP'
+        ]
+        
+        for rule_type in rule_types:
             if rules_dict[rule_type]:
                 f.write(f"\n# {rule_type}\n")
                 for rule in sorted(rules_dict[rule_type]):
@@ -150,9 +169,12 @@ def update_readme(rule_count):
 ## 规则格式说明
 - DOMAIN：完整域名匹配
 - DOMAIN-SUFFIX：域名后缀匹配
+- DOMAIN-WILDCARD：域名通配符匹配
 - DOMAIN-KEYWORD：域名关键字匹配
+- USER-AGENT：User-Agent匹配
 - IP-CIDR：IPv4 地址段
 - IP6-CIDR：IPv6 地址段
+- IP-ASN：自治系统号码
 - GEOIP：GeoIP数据库（国家/地区）匹配
 """
     
