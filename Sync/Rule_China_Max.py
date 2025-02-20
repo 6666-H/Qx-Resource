@@ -57,13 +57,21 @@ def standardize_rule(line):
     }
     rule_type = type_map.get(rule_type, rule_type)
 
+    # 检查是否为 IPv6 地址段
+    if rule_type == 'IP-CIDR' and ':' in content:
+        rule_type = 'IP6-CIDR'
+    
     # 对于IP类规则，保留规则类型但去除no-resolve选项
     if rule_type in ['IP-CIDR', 'IP6-CIDR', 'IP-ASN']:
-        if rule_type in ['IP-CIDR', 'IP6-CIDR'] and '/' not in content:
-            content = f"{content}/{'32' if rule_type == 'IP-CIDR' else '128'}"
+        content = content.split(',')[0]  # 移除 no-resolve 等选项
+        if rule_type == 'IP-CIDR' and '/' not in content:
+            content = f"{content}/32"
+        elif rule_type == 'IP6-CIDR' and '/' not in content:
+            content = f"{content}/128"
         return rule_type, content
 
     return rule_type, content
+
 
 def get_rule_priority(rule_type):
     """获取规则优先级"""
