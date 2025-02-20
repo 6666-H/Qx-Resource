@@ -1,14 +1,11 @@
 # 国内分流规则合集
-# 更新时间：2025-02-20 12:13:16 (北京时间)
+# 更新时间：2025-02-20 12:28:05 (北京时间)
 # 合并自以下源：
 # # ChinaMax: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/ChinaMax/ChinaMax.list
 # ChinaMax_2: https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/ChinaMax.list
 # Direct_Rule: https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Direct_Rule/Direct_Rule.rule
 # GEOIP: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Direct.list
 
-
-# GEOIP
-GEOIP,CN
 
 # DOMAIN
 DOMAIN,1-fss24-s0.streamhoster.com
@@ -97583,6 +97580,9 @@ DOMAIN-SUFFIX,zzzyy.com
 DOMAIN-SUFFIX,zzzzaaaa.com
 DOMAIN-SUFFIX,zzzzzz.me
 
+# DOMAIN-WILDCARD
+DOMAIN-WILDCARD,windows-*.net
+
 # DOMAIN-KEYWORD
 DOMAIN-KEYWORD,alicdn
 DOMAIN-KEYWORD,alipay
@@ -97597,6 +97597,73 @@ DOMAIN-KEYWORD,stripe
 DOMAIN-KEYWORD,taobao
 DOMAIN-KEYWORD,tmall.com
 DOMAIN-KEYWORD,weibo
+
+# USER-AGENT
+USER-AGENT,%E4%B8%AD%E5%9B%BD%E5%B7%A5%E5%95%86%E9%93%B6%E8%A1%8C*
+USER-AGENT,%E4%BA%AC%E4%B8%9C%E5%88%B0%E5%AE%B6*
+USER-AGENT,%E4%BC%81%E4%B8%9A%E5%BE%AE%E4%BF%A1*
+USER-AGENT,%E4%BC%98%E9%85%B7*
+USER-AGENT,%E5%8D%B3%E5%88%BB*
+USER-AGENT,%E5%92%AA%E5%92%95%E8%A7%86%E9%A2%91
+USER-AGENT,%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90
+USER-AGENT,%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90*
+USER-AGENT,%E9%85%B7%E6%88%91%E9%9F%B3%E4%B9%90*
+USER-AGENT,*QIYI*
+USER-AGENT,*Vainglory*
+USER-AGENT,*bili*
+USER-AGENT,AcFun*
+USER-AGENT,AdBlock*
+USER-AGENT,Best%20Trace*
+USER-AGENT,Bilibili*
+USER-AGENT,DomesticMedia*
+USER-AGENT,Himalaya*
+USER-AGENT,MGTV*
+USER-AGENT,MOO%E9%9F%B3%E4%B9%90*
+USER-AGENT,MOO*
+USER-AGENT,MegaWerewolf*
+USER-AGENT,MicroMessenger%20Client
+USER-AGENT,MicroMessenger*
+USER-AGENT,MicroMessengerClient*
+USER-AGENT,Microsoft*
+USER-AGENT,MiguVideo*
+USER-AGENT,Moke*
+USER-AGENT,NeteaseMusic*
+USER-AGENT,PPStream*
+USER-AGENT,QIYI*
+USER-AGENT,QQ%E9%9F%B3%E4%B9%90
+USER-AGENT,QQ%e9%9f%b3%e4%b9%90*
+USER-AGENT,QQ*
+USER-AGENT,QQMusic*
+USER-AGENT,QYPlayer*
+USER-AGENT,RemotePlay*
+USER-AGENT,TIM*
+USER-AGENT,TeamViewer*
+USER-AGENT,TencentMidasConnect*
+USER-AGENT,TikTok*
+USER-AGENT,WeChat*
+USER-AGENT,WebTorrent*
+USER-AGENT,YYeTs*
+USER-AGENT,Youku*
+USER-AGENT,arrowio*
+USER-AGENT,baiduyinyue
+USER-AGENT,balls*
+USER-AGENT,bili*
+USER-AGENT,bili-inter*
+USER-AGENT,bilibili*
+USER-AGENT,cmb*
+USER-AGENT,cmblife*
+USER-AGENT,eusoft_ting_en_iphone
+USER-AGENT,hearthstone*
+USER-AGENT,hide*
+USER-AGENT,iQIYI*
+USER-AGENT,iQiYi*
+USER-AGENT,iQiyi*
+USER-AGENT,live4iphone*
+USER-AGENT,qqlive4iphone*
+USER-AGENT,ting_en
+USER-AGENT,walkman*
+USER-AGENT,xiami*
+USER-AGENT,youku*
 
 # IP-CIDR
 IP-CIDR,0.0.0.0/32
@@ -130260,3 +130327,9 @@ IP6-CIDR,::ffff:58.58.0.90/128
 IP6-CIDR,::ffff:60.171.183.161/128
 IP6-CIDR,::ffff:60.171.183.186/128
 IP6-CIDR,::ffff:60.171.183.98/128
+
+# IP-ASN
+IP-ASN,132203
+
+# GEOIP
+GEOIP,CN
