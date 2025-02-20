@@ -28,56 +28,41 @@ def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, FILTER_DIR)).mkdir(parents=True, exist_ok=True)
 
+def clean_domain(domain):
+    """清理域名，去除前导点和多余空格"""
+    return domain.strip().lstrip('.')
+
 def standardize_rule(line):
     """标准化规则格式"""
     if not line or line.startswith('#'):
-        return None, None, None
+        return None, None
 
-    # 规则格式转换映射
-    replacements = {
-        'HOST-SUFFIX,': 'DOMAIN-SUFFIX,',
-        'HOST,': 'DOMAIN,',
-        'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
-        'IP-CIDR,': 'IP-CIDR,',
-        'IP6-CIDR,': 'IP6-CIDR,',
-        'GEOIP,': 'GEOIP,'
-    }
-    
     line = line.strip()
-    
-    # 处理以点开头的域名
-    if line.startswith('.'):
-        return 'DOMAIN-SUFFIX', line[1:], None
-    
+
     # 处理不带前缀的域名
-    if not any(line.startswith(prefix) for prefix in replacements.keys()) and ',' not in line:
-        if line.startswith('xn--'):  # 处理 xn-- 开头的特殊域名
-            return 'DOMAIN-SUFFIX', line, None
-        else:
-            return 'DOMAIN-KEYWORD', line, None
-    
-    # 标准格式转换
-    for old, new in replacements.items():
-        line = line.replace(old, new)
-    
+    if ',' not in line:
+        return 'DOMAIN-SUFFIX', clean_domain(line)
+
+    # 处理标准格式规则
     parts = line.split(',')
-    if len(parts) < 2:
-        return None, None, None
+    rule_type = parts[0].upper()
+    content = clean_domain(parts[1])
 
-    rule_type = parts[0]
-    content = parts[1]
-    options = parts[2] if len(parts) > 2 else None
+    # 规则类型转换
+    type_map = {
+        'HOST': 'DOMAIN',
+        'HOST-SUFFIX': 'DOMAIN-SUFFIX',
+        'HOST-KEYWORD': 'DOMAIN-KEYWORD'
+    }
+    rule_type = type_map.get(rule_type, rule_type)
 
-    # 处理 IP-CIDR 规则
+    # 对于IP-CIDR规则，保留规则类型但去除no-resolve选项
     if rule_type in ['IP-CIDR', 'IP6-CIDR']:
         if '/' not in content:
             content = f"{content}/{'32' if rule_type == 'IP-CIDR' else '128'}"
+        return rule_type, content
 
-    # 如果是 HOST 规则，转换为 DOMAIN
-    if rule_type == 'HOST':
-        rule_type = 'DOMAIN'
-
-    return rule_type, content, options
+    return rule_type, content
 
 def get_rule_priority(rule_type):
     """获取规则优先级"""
@@ -119,11 +104,9 @@ def download_and_merge_rules():
             response.raise_for_status()
             
             for line in response.text.splitlines():
-                rule_type, content, options = standardize_rule(line.strip())
-                if content:
-                    rule = f"{content},{options}" if options else content
-                    if rule_type in rules_dict:
-                        rules_dict[rule_type].add(rule)
+                rule_type, content = standardize_rule(line.strip())
+                if content and rule_type in rules_dict:
+                    rules_dict[rule_type].add(content)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
@@ -138,11 +121,7 @@ def download_and_merge_rules():
             if rules_dict[rule_type]:
                 f.write(f"\n# {rule_type}\n")
                 for rule in sorted(rules_dict[rule_type]):
-                    if ',' in rule:
-                        content, options = rule.split(',', 1)
-                        f.write(f"{rule_type},{content},{options}\n")
-                    else:
-                        f.write(f"{rule_type},{rule}\n")
+                    f.write(f"{rule_type},{rule}\n")
     
     total_rules = sum(len(rules) for rules in rules_dict.values())
     print(f"Successfully merged {total_rules} unique rules to {OUTPUT_FILE}")
@@ -158,6 +137,11 @@ def update_readme(rule_count):
 
 ## 规则说明
 本规则集合并自各个开源规则，统一转换为标准格式。
+- 去除重复规则
+- 统一规则格式
+- 移除额外的选项（如 ChinaMax, no-resolve）
+- 将不带前缀的域名默认设为 DOMAIN-SUFFIX
+- 去除域名前的点(.)
 当前规则数量：{rule_count}
 
 ## 规则来源
@@ -169,6 +153,7 @@ def update_readme(rule_count):
 - DOMAIN-KEYWORD：域名关键字匹配
 - IP-CIDR：IPv4 地址段
 - IP6-CIDR：IPv6 地址段
+- GEOIP：GeoIP数据库（国家/地区）匹配
 """
     
     with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
