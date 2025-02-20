@@ -117,7 +117,7 @@ def download_and_merge_rules():
         f.write(header)
         
         # 按类型写入规则
-        for rule_type in ['GEOIP', 'DOMAIN', 'DOMAIN-SUFFIX', 'DOMAIN-KEYWORD', 'IP-CIDR', 'IP6-CIDR']:
+        for rule_type in ['DOMAIN', 'DOMAIN-SUFFIX','DOMAIN-WILDCARD' 'DOMAIN-KEYWORD', 'USER-AGENT','IP-CIDR', 'IP6-CIDR','GEOIP','IP-ASN']:
             if rules_dict[rule_type]:
                 f.write(f"\n# {rule_type}\n")
                 for rule in sorted(rules_dict[rule_type]):
