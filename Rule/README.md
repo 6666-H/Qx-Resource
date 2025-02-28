@@ -1,7 +1,7 @@
 # 国内分流规则合集
 
 ## 更新时间
-2025-02-25 10:55:07 (北京时间)
+2025-02-28 10:55:35 (北京时间)
 
 ## 规则说明
 本规则集合并自各个开源规则，统一转换为标准格式。
@@ -10,7 +10,7 @@
 - 移除额外的选项（如 ChinaMax, no-resolve）
 - 将不带前缀的域名默认设为 DOMAIN-SUFFIX
 - 去除域名前的点(.)
-当前规则数量：117990
+当前规则数量：117714
 
 ## 规则来源
 - ChinaMax: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/ChinaMax/ChinaMax.list
