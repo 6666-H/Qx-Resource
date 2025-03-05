@@ -52,60 +52,101 @@ class RuleProcessor:
     def _convert_surge_rule(self, line: str) -> str:
         """将 Surge 格式的规则转换为 QuantumultX 格式"""
         try:
-            # 解析规则
+            # 如果已经是 QuantumultX 格式,直接返回
+            if ' url ' in line:
+                return line
+                
+            # 跳过非规则行    
+            if not ' = ' in line:
+                return line
+
+            # 解析 Surge 规则
+            if line.startswith('hostname'):
+                return line
+                
             name, content = line.split('=', 1)
             content = content.strip()
             
-            # 提取关键信息
-            rule_type = None
+            # 提取关键参数
             pattern = None
             script_path = None
+            rule_type = None
             requires_body = False
+            binary_body = False
             
-            # 解析参数
-            params = []
-            current_param = ''
-            in_quote = False
-            
-            # 先处理引号内的内容
-            for char in content:
-                if char == ',' and not in_quote:
-                    if current_param.strip():
-                        params.append(current_param.strip())
-                    current_param = ''
-                elif char == '"':
-                    in_quote = not in_quote
-                    current_param += char
-                else:
-                    current_param += char
-            if current_param.strip():
-                params.append(current_param.strip())
-
-            # 解析参数
-            for param in params:
+            # 解析所有参数
+            params = {}
+            param_list = content.split(',')
+            for param in param_list:
                 param = param.strip()
-                if param.startswith('type='):
-                    rule_type = param.split('=')[1]
-                elif param.startswith('pattern='):
-                    pattern = param.split('=', 1)[1].strip('"')
-                elif param.startswith('script-path='):
-                    script_path = param.split('=', 1)[1].strip('"')
-                elif param.startswith('requires-body='):
-                    requires_body = param.split('=')[1].lower() == 'true'
-            
-            if not pattern or not script_path:
+                if '=' in param:
+                    key, value = param.split('=', 1)
+                    key = key.strip()
+                    value = value.strip().strip('"')
+                    params[key] = value
+                else:
+                    # 处理类型参数
+                    if param.startswith('type='):
+                        rule_type = param.split('=')[1]
+
+            # 提取必要参数
+            pattern = params.get('pattern', '').strip('"')
+            script_path = params.get('script-path', '').strip('"')
+            rule_type = params.get('type', '')
+            requires_body = params.get('requires-body', '').lower() == 'true'
+            binary_body = params.get('binary-body-mode', '').lower() == 'true'
+
+            # 如果缺少必要参数则返回原规则
+            if not pattern or not rule_type:
                 return line
 
             # 转换规则类型
+            qx_type = ''
             if rule_type == 'http-response':
-                qx_type = 'script-response-body' if requires_body else 'script-response-header'
+                if requires_body:
+                    qx_type = 'script-response-body'
+                else:
+                    qx_type = 'script-response-header'
             elif rule_type == 'http-request':
-                qx_type = 'script-request-body' if requires_body else 'script-request-header'
+                if requires_body:
+                    qx_type = 'script-request-body'
+                else:
+                    qx_type = 'script-request-header'
+            elif 'reject' in rule_type:
+                # 处理各种 reject 类型
+                reject_map = {
+                    'reject': 'reject',
+                    'reject-200': 'reject-200',
+                    'reject-img': 'reject-img',
+                    'reject-dict': 'reject-dict',
+                    'reject-array': 'reject-array'
+                }
+                qx_type = reject_map.get(rule_type, 'reject')
             else:
                 return line
+
+            # 构建 QuantumultX 规则
+            if qx_type.startswith('reject'):
+                return f"{pattern} url {qx_type}"
+            elif script_path:
+                result = f"{pattern} url {qx_type} {script_path}"
                 
-            # 构建 QuantumultX 格式的规则
-            return f"{pattern} url {qx_type} {script_path}"
+                # 添加额外参数(如果需要)
+                extra_params = []
+                if 'max-size' in params:
+                    extra_params.append(f"max-size={params['max-size']}")
+                if 'timeout' in params:
+                    extra_params.append(f"timeout={params['timeout']}")
+                if binary_body:
+                    extra_params.append("binary-body-mode=true")
+                    
+                if extra_params:
+                    result += f", {', '.join(extra_params)}"
+                
+                return result
+            else:
+                return line
+
         except Exception as e:
             print(f"Error converting rule: {e}")
             return line
