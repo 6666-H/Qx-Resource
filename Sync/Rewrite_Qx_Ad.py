@@ -9,7 +9,7 @@ class Config:
     def __init__(self):
         self.REPO_PATH = "Rewrite"
         self.REWRITE_DIR = "Advertising"
-        self.OUTPUT_FILE = "Ad_Qx.config"
+        self.OUTPUT_FILE = "Ad.config"
         self.README_PATH = "README_Rewrite.md"
         self.MAX_WORKERS = 10
         self.TIMEOUT = 30
@@ -128,21 +128,7 @@ class RuleProcessor:
             if qx_type.startswith('reject'):
                 return f"{pattern} url {qx_type}"
             elif script_path:
-                result = f"{pattern} url {qx_type} {script_path}"
-                
-                # 添加额外参数(如果需要)
-                extra_params = []
-                if 'max-size' in params:
-                    extra_params.append(f"max-size={params['max-size']}")
-                if 'timeout' in params:
-                    extra_params.append(f"timeout={params['timeout']}")
-                if binary_body:
-                    extra_params.append("binary-body-mode=true")
-                    
-                if extra_params:
-                    result += f", {', '.join(extra_params)}"
-                
-                return result
+                return f"{pattern} url {qx_type} {script_path}"
             else:
                 return line
 
@@ -304,6 +290,7 @@ class RuleProcessor:
         other_rules.sort()
 
         return final_reject_rules + final_script_rules + other_rules
+
     def _process_hostname(self, line: str, rules: Dict[str, Set[str]]):
         """处理hostname规则，将空格分隔转换为逗号分隔"""
         line = line.strip()
@@ -376,28 +363,18 @@ class RuleProcessor:
             if ' = type=' in line:
                 line = self._convert_surge_rule(line)
             
-            # 处理脚本类规则
+            # 检查是否是脚本类规则
             is_script = False
             for script_type in self.SCRIPT_TYPES:
                 if f'url {script_type}' in line:
                     is_script = True
-                    # 重新组织脚本规则格式
+                    # 处理脚本规则，移除额外参数
                     parts = line.split(' url ')
                     if len(parts) == 2:
                         url_pattern = parts[0]
-                        script_parts = parts[1].split(',')
-                        script_type_and_path = script_parts[0].strip().split(' ')
-                        if len(script_type_and_path) >= 2:
-                            script_type = script_type_and_path[0]
-                            script_path = script_type_and_path[-1]
-                            # 收集其他参数
-                            other_params = [param.strip() for param in script_parts[1:] if param.strip()]
-                            # 重新组合规则，将参数放在脚本路径前面
-                            if other_params:
-                                formatted_rule = f"{url_pattern} url {script_type} {' '.join(other_params)} {script_path}"
-                            else:
-                                formatted_rule = f"{url_pattern} url {script_type} {script_path}"
-                            rules['script'].add(formatted_rule)
+                        script_part = parts[1].split(',')[0].strip()  # 只保留逗号前的部分
+                        line = f"{url_pattern} url {script_part}"
+                    rules['script'].add(line)
                     break
             
             # 如果不是脚本类规则，则添加到当前标签下
