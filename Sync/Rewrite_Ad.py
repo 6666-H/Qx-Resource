@@ -304,7 +304,6 @@ class RuleProcessor:
         other_rules.sort()
 
         return final_reject_rules + final_script_rules + other_rules
-
     def _process_hostname(self, line: str, rules: Dict[str, Set[str]]):
         """处理hostname规则，将空格分隔转换为逗号分隔"""
         line = line.strip()
@@ -336,77 +335,76 @@ class RuleProcessor:
         if hostname_list:
             rules['host'].update(hostname_list)
 
-def process_rules(self, content: str) -> Dict[str, Set[str]]:
-    """处理规则内容"""
-    rules = {
-        'url-rewrite': set(),
-        'script': set()
-    }
-    
-    if not content:
-        return rules
+    def process_rules(self, content: str) -> Dict[str, Set[str]]:
+        """处理规则内容"""
+        rules = {
+            'url-rewrite': set(),
+            'script': set()
+        }
         
-    current_section = 'url-rewrite'
-    
-    for line in content.splitlines():
-        line = line.strip()
-        if not line or line.startswith('#') or line.startswith('//'):
-            continue
+        if not content:
+            return rules
             
-        # 处理使用下划线作为分隔符的规则
-        if ' _ ' in line:
-            parts = line.split(' _ ')
-            if len(parts) == 2:
-                line = f"{parts[0]} url {parts[1]}"
-            
-        # 检查是否是标签行
-        if line.startswith('[') and line.endswith(']'):
-            current_section = line[1:-1].lower()
-            if current_section not in rules:
-                rules[current_section] = set()
-            continue
-            
-        # 特殊处理 hostname
-        if 'hostname' in line.lower():
-            if 'host' not in rules:
-                rules['host'] = set()
-            self._process_hostname(line, rules)
-            continue
+        current_section = 'url-rewrite'
         
-        # 检查是否是 Surge 格式的规则并转换
-        if ' = type=' in line:
-            line = self._convert_surge_rule(line)
-        
-        # 处理脚本类规则
-        is_script = False
-        for script_type in self.SCRIPT_TYPES:
-            if f'url {script_type}' in line:
-                is_script = True
-                # 重新组织脚本规则格式
-                parts = line.split(' url ')
-                if len(parts) == 2:
-                    url_pattern = parts[0]
-                    script_parts = parts[1].split(',')
-                    script_type_and_path = script_parts[0].strip().split(' ')
-                    if len(script_type_and_path) >= 2:
-                        script_type = script_type_and_path[0]
-                        script_path = script_type_and_path[-1]
-                        # 收集其他参数
-                        other_params = [param.strip() for param in script_parts[1:] if param.strip()]
-                        # 重新组合规则，将参数放在脚本路径前面
-                        if other_params:
-                            formatted_rule = f"{url_pattern} url {script_type} {' '.join(other_params)} {script_path}"
-                        else:
-                            formatted_rule = f"{url_pattern} url {script_type} {script_path}"
-                        rules['script'].add(formatted_rule)
-                break
-        
-        # 如果不是脚本类规则，则添加到当前标签下
-        if not is_script and current_section:
-            rules[current_section].add(line)
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#') or line.startswith('//'):
+                continue
                 
-    return rules
-
+            # 处理使用下划线作为分隔符的规则
+            if ' _ ' in line:
+                parts = line.split(' _ ')
+                if len(parts) == 2:
+                    line = f"{parts[0]} url {parts[1]}"
+            
+            # 检查是否是标签行
+            if line.startswith('[') and line.endswith(']'):
+                current_section = line[1:-1].lower()
+                if current_section not in rules:
+                    rules[current_section] = set()
+                continue
+                
+            # 特殊处理 hostname
+            if 'hostname' in line.lower():
+                if 'host' not in rules:
+                    rules['host'] = set()
+                self._process_hostname(line, rules)
+                continue
+            
+            # 检查是否是 Surge 格式的规则并转换
+            if ' = type=' in line:
+                line = self._convert_surge_rule(line)
+            
+            # 处理脚本类规则
+            is_script = False
+            for script_type in self.SCRIPT_TYPES:
+                if f'url {script_type}' in line:
+                    is_script = True
+                    # 重新组织脚本规则格式
+                    parts = line.split(' url ')
+                    if len(parts) == 2:
+                        url_pattern = parts[0]
+                        script_parts = parts[1].split(',')
+                        script_type_and_path = script_parts[0].strip().split(' ')
+                        if len(script_type_and_path) >= 2:
+                            script_type = script_type_and_path[0]
+                            script_path = script_type_and_path[-1]
+                            # 收集其他参数
+                            other_params = [param.strip() for param in script_parts[1:] if param.strip()]
+                            # 重新组合规则，将参数放在脚本路径前面
+                            if other_params:
+                                formatted_rule = f"{url_pattern} url {script_type} {' '.join(other_params)} {script_path}"
+                            else:
+                                formatted_rule = f"{url_pattern} url {script_type} {script_path}"
+                            rules['script'].add(formatted_rule)
+                    break
+            
+            # 如果不是脚本类规则，则添加到当前标签下
+            if not is_script and current_section:
+                rules[current_section].add(line)
+                    
+        return rules
 
     def deduplicate_hostnames(self, hostnames: Set[str]) -> str:
         """去重和排序hostname"""
