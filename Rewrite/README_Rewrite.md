@@ -1,19 +1,19 @@
 # 自建重写广告合集
 
 ## 更新时间
-2025-03-05 16:20:08 (北京时间)
+2025-03-05 16:33:27 (北京时间)
 
 ## 规则说明
 本重写规则集合并自各个开源规则，去除重复规则。
-- Url-Rewrite 规则数量：52
-- Script 规则数量：507
+- Url-Rewrite 规则数量：2130
+- Script 规则数量：501
 - General 规则数量：2
 - Rule 规则数量：358
-- Url Rewrite 规则数量：857
+- Url Rewrite 规则数量：61
 - Mitm 规则数量：0
 - Host 规则数量：679
-- Map Local 规则数量：1345
 - Body Rewrite 规则数量：21
+- Map Local 规则数量：115
 
 ## 规则来源
 - 阻止常见的 HTTPDNS 服务器: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%8B%A6%E6%88%AAHTTPDNS.official.sgmodule
