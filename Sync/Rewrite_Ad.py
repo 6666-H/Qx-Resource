@@ -49,6 +49,12 @@ class RuleProcessor:
             if ' url ' in line:
                 return line
                 
+            # 处理使用下划线作为分隔符的规则
+            if ' _ ' in line:
+                parts = line.split(' _ ')
+                if len(parts) == 2:
+                    return f"{parts[0]} url {parts[1]}"
+                
             # 跳过非规则行    
             if not ' = ' in line:
                 return line
@@ -202,12 +208,12 @@ class RuleProcessor:
         """获取规则的类型和类别"""
         # 检查是否是 reject 类规则
         for rule_type in self.REJECT_PRIORITY.keys():
-            if rule_type in rule:
+            if f'url {rule_type}' in rule:
                 return ('reject', rule_type)
                 
         # 检查是否是 script 类规则
         for script_type in self.SCRIPT_TYPES:
-            if script_type in rule:
+            if f'url {script_type}' in rule:
                 return ('script', script_type)
                 
         return ('other', 'other')
@@ -333,23 +339,29 @@ class RuleProcessor:
     def process_rules(self, content: str) -> Dict[str, Set[str]]:
         """处理规则内容"""
         rules = {
-            'url-rewrite': set(),  # 默认创建 'url-rewrite' 标签用于存储无标签规则
-            'script': set()        # 创建 'script' 标签用于存储脚本类规则
+            'url-rewrite': set(),
+            'script': set()
         }
         
         if not content:
             return rules
             
-        current_section = 'url-rewrite'  # 默认使用 'url-rewrite' 标签
+        current_section = 'url-rewrite'
         
         for line in content.splitlines():
             line = line.strip()
             if not line or line.startswith('#') or line.startswith('//'):
                 continue
                 
+            # 处理使用下划线作为分隔符的规则
+            if ' _ ' in line:
+                parts = line.split(' _ ')
+                if len(parts) == 2:
+                    line = f"{parts[0]} url {parts[1]}"
+                
             # 检查是否是标签行
             if line.startswith('[') and line.endswith(']'):
-                current_section = line[1:-1].lower()  # 移除[]并转换为小写
+                current_section = line[1:-1].lower()
                 if current_section not in rules:
                     rules[current_section] = set()
                 continue
