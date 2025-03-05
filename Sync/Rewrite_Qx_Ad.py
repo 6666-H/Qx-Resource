@@ -9,7 +9,7 @@ class Config:
     def __init__(self):
         self.REPO_PATH = "Rewrite"
         self.REWRITE_DIR = "Advertising"
-        self.OUTPUT_FILE = "Ad.config"
+        self.OUTPUT_FILE = "Ad_Qx.config"
         self.README_PATH = "README_Rewrite.md"
         self.MAX_WORKERS = 10
         self.TIMEOUT = 30
