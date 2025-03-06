@@ -4,6 +4,7 @@ import datetime
 from datetime import timedelta
 import git
 from pathlib import Path
+import re
 
 # 配置项
 REPO_PATH = "Rule"
@@ -11,6 +12,7 @@ FILTER_DIR = "Direct"
 OUTPUT_FILE = "China_Max.list"
 README_PATH = "README.md"
 
+# 分流规则源列表
 FILTER_SOURCES = {
     "ChinaMax": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/ChinaMax/ChinaMax.list",
     "ChinaMax_2": "https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/ChinaMax.list",
@@ -28,162 +30,201 @@ def setup_directory():
     """创建必要的目录"""
     Path(os.path.join(REPO_PATH, FILTER_DIR)).mkdir(parents=True, exist_ok=True)
 
-def clean_domain(domain):
-    """清理域名，去除前导点和多余空格"""
-    return domain.strip().lstrip('.')
+def is_ip_address(text):
+    """判断是否为 IP 地址"""
+    parts = text.split('.')
+    if len(parts) != 4:
+        return False
+    try:
+        return all(0 <= int(part) <= 255 for part in parts)
+    except ValueError:
+        return False
 
 def standardize_rule(line):
     """标准化规则格式"""
     if not line or line.startswith('#'):
         return None, None
-
-    line = line.strip()
-
-    # 处理不带前缀的域名
-    if ',' not in line:
-        return 'DOMAIN-SUFFIX', clean_domain(line)
-
-    # 处理标准格式规则
-    parts = line.split(',')
-    rule_type = parts[0].upper()
-    content = clean_domain(parts[1])
-
-    # 规则类型转换
-    type_map = {
-        'HOST': 'DOMAIN',
-        'HOST-SUFFIX': 'DOMAIN-SUFFIX',
-        'HOST-KEYWORD': 'DOMAIN-KEYWORD',
-        'HOST-WILDCARD': 'DOMAIN-WILDCARD'
-    }
-    rule_type = type_map.get(rule_type, rule_type)
-
-    # 检查是否为 IPv6 地址段
-    if rule_type == 'IP-CIDR' and ':' in content:
-        rule_type = 'IP6-CIDR'
     
-    # 对于IP类规则，保留规则类型但去除no-resolve选项
-    if rule_type in ['IP-CIDR', 'IP6-CIDR', 'IP-ASN']:
-        content = content.split(',')[0]  # 移除 no-resolve 等选项
-        if rule_type == 'IP-CIDR' and '/' not in content:
-            content = f"{content}/32"
-        elif rule_type == 'IP6-CIDR' and '/' not in content:
-            content = f"{content}/128"
-        return rule_type, content
-
-    return rule_type, content
-
+    # 规则格式转换映射
+    replacements = {
+        'HOST-SUFFIX,': 'DOMAIN-SUFFIX,',
+        'HOST,': 'DOMAIN,',
+        'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
+        'IP-CIDR,': 'IP-CIDR,',
+        'IP6-CIDR,': 'IP-CIDR6,',
+        'IP6-CIDR,': 'IP-CIDR6,',
+        'HOST-REGEX,': 'DOMAIN-REGEX,'
+    }
+    
+    line = line.strip()
+    for old, new in replacements.items():
+        line = line.replace(old, new)
+    
+    # 处理 IP-CIDR 规则
+    if line.startswith('IP-CIDR,'):
+        match = re.match(r'IP-CIDR,([^,]+)', line)
+        if match:
+            ip_cidr = match.group(1)
+            ip_parts = ip_cidr.split('/')
+            if len(ip_parts) >= 1:
+                ip = ip_parts[0]
+                cidr = ip_parts[1] if len(ip_parts) > 1 else "32"
+                return 'IP-CIDR', f"{ip}/{cidr}"
+    
+    parts = line.split(',')
+    if len(parts) >= 2:
+        return parts[0], parts[1].strip()
+    return None, None
 
 def get_rule_priority(rule_type):
     """获取规则优先级"""
     priorities = {
-        'DOMAIN': 1,
-        'DOMAIN-SUFFIX': 2,
-        'DOMAIN-WILDCARD': 3,
+        'DOMAIN-REGEX': 1,
         'DOMAIN-KEYWORD': 4,
-        'USER-AGENT': 5,
-        'IP-CIDR': 6,
-        'IP6-CIDR': 7,
-        'IP-ASN': 8,
-        'GEOIP': 9
+        'DOMAIN-SUFFIX': 3,
+        'DOMAIN': 2,
+        'IP-CIDR': 5,
+        'IP-CIDR6': 5
     }
-    return priorities.get(rule_type, 99)
+    return priorities.get(rule_type, 0)
+
+def remove_duplicates(rules):
+    """去除重复规则"""
+    unique_rules = {}
+    
+    for rule in rules:
+        rule_type, domain = standardize_rule(rule)
+        if domain:
+            # 获取新规则的优先级
+            new_priority = get_rule_priority(rule_type)
+            
+            # 如果域名已存在，比较优先级
+            if domain in unique_rules:
+                current_type, current_priority = unique_rules[domain]
+                if new_priority > current_priority:
+                    unique_rules[domain] = (rule_type, new_priority)
+            else:
+                unique_rules[domain] = (rule_type, new_priority)
+    
+    # 转换回规则格式
+    result = []
+    for domain, (rule_type, _) in unique_rules.items():
+        if rule_type == "IP-CIDR":
+            if '/' in domain:
+                result.append(f"IP-CIDR,{domain}")
+            else:
+                result.append(f"IP-CIDR,{domain}/32")
+        else:
+            result.append(f"{rule_type},{domain}")
+    
+    return sorted(result)
 
 def download_and_merge_rules():
     """下载并合并分流规则"""
     beijing_time = get_beijing_time()
-    header = f"""# 国内分流规则合集
-# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-# 合并自以下源：
-# {chr(10).join([f'# {name}: {url}' for name, url in FILTER_SOURCES.items()])}
+    
+    # 存储规则的字典
+    rules_dict = {}
+    comments = []
 
-"""
-    
-    # 存储规则的字典，用于去重和分类
-    rules_dict = {
-        'DOMAIN': set(),
-        'DOMAIN-SUFFIX': set(),
-        'DOMAIN-WILDCARD': set(),
-        'DOMAIN-KEYWORD': set(),
-        'USER-AGENT': set(),
-        'IP-CIDR': set(),
-        'IP6-CIDR': set(),
-        'IP-ASN': set(),
-        'GEOIP': set()
+    # 按规则类型分组
+    rule_groups = {
+        'DOMAIN-REGEX': [],
+        'DOMAIN-KEYWORD': [],
+        'DOMAIN-SUFFIX': [],
+        'DOMAIN': [],
+        'IP-CIDR': [],
+        'IP-CIDR6': [],
+        'USER-AGENT': []
     }
-    
+
     # 下载和处理规则
     for name, url in FILTER_SOURCES.items():
         try:
             print(f"Downloading rules from {name}...")
             response = requests.get(url, timeout=30)
             response.raise_for_status()
+            content = response.text
+
+            comments.append(f"\n# ======== {name} ========")
             
-            for line in response.text.splitlines():
-                rule_type, content = standardize_rule(line.strip())
-                if content and rule_type in rules_dict:
-                    rules_dict[rule_type].add(content)
+            for line in content.splitlines():
+                rule_type, domain = standardize_rule(line.strip())
+                if rule_type and domain:
+                    if rule_type in rule_groups:
+                        rule_groups[rule_type].append(f"{rule_type},{domain}")
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
 
+    # 统计去重前的规则数量
+    total_before = sum(len(rules) for rules in rule_groups.values())
+    
+    # 生成去重统计信息
+    dedup_stats = ["# 规则去重统计:"]
+    dedup_stats.append(f"# 去重前规则总数: {total_before}")
+    
+    # 对规则进行去重
+    for rule_type in rule_groups:
+        original_count = len(rule_groups[rule_type])
+        rule_groups[rule_type] = remove_duplicates(rule_groups[rule_type])
+        new_count = len(rule_groups[rule_type])
+        dedup_stats.append(f"# {rule_type}: {original_count} -> {new_count} ({original_count - new_count} 条重复)")
+        print(f"{rule_type}: 去重前 {original_count} 条，去重后 {new_count} 条")
+
+    # 统计去重后的总规则数量
+    total_after = sum(len(rules) for rules in rule_groups.values())
+    dedup_stats.append(f"# 去重后规则总数: {total_after}")
+    dedup_stats.append(f"# 重复规则数: {total_before - total_after}")
+    print(f"总计：去重前 {total_before} 条，去重后 {total_after} 条")
+
+    # 组合文件头部内容
+    header = f"""# 广告拦截分流规则合集
+# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+# 合并自以下源：
+# {chr(10).join([f'# {name}: {url}' for name, url in FILTER_SOURCES.items()])}
+
+{chr(10).join(dedup_stats)}
+
+"""
+
+    # 组合最终内容
+    final_content = header
+    final_content += "\n".join(comments)
+    final_content += "\n\n# ======== 去重后的规则 ========\n"
+    
+    # 按组添加规则（保持优先级顺序）
+    for group_name in ['DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']:
+        if rule_groups[group_name]:
+            final_content += f"\n# {group_name}\n"
+            final_content += '\n'.join(rule_groups[group_name])
+            final_content += '\n'
+
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, FILTER_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(header)
-        
-        # 按照指定顺序写入规则
-        rule_types = [
-            'DOMAIN',
-            'DOMAIN-SUFFIX',
-            'DOMAIN-WILDCARD',
-            'DOMAIN-KEYWORD',
-            'USER-AGENT',
-            'IP-CIDR',
-            'IP6-CIDR',
-            'IP-ASN',
-            'GEOIP'
-        ]
-        
-        for rule_type in rule_types:
-            if rules_dict[rule_type]:
-                f.write(f"\n# {rule_type}\n")
-                for rule in sorted(rules_dict[rule_type]):
-                    f.write(f"{rule_type},{rule}\n")
+        f.write(final_content)
     
-    total_rules = sum(len(rules) for rules in rules_dict.values())
-    print(f"Successfully merged {total_rules} unique rules to {OUTPUT_FILE}")
-    return total_rules
+    print(f"Successfully merged {total_after} unique rules to {OUTPUT_FILE}")
+    return total_after
 
 def update_readme(rule_count):
     """更新 README.md"""
     beijing_time = get_beijing_time()
-    content = f"""# 国内分流规则合集
+    content = f"""# 广告拦截分流规则合集
 
 ## 更新时间
 {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 
 ## 规则说明
-本规则集合并自各个开源规则，统一转换为标准格式。
-- 去除重复规则
-- 统一规则格式
-- 移除额外的选项（如 ChinaMax, no-resolve）
-- 将不带前缀的域名默认设为 DOMAIN-SUFFIX
-- 去除域名前的点(.)
+本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
 当前规则数量：{rule_count}
 
 ## 规则来源
 {chr(10).join([f'- {name}: {url}' for name, url in FILTER_SOURCES.items()])}
 
-## 规则格式说明
-- DOMAIN：完整域名匹配
-- DOMAIN-SUFFIX：域名后缀匹配
-- DOMAIN-WILDCARD：域名通配符匹配
-- DOMAIN-KEYWORD：域名关键字匹配
-- USER-AGENT：User-Agent匹配
-- IP-CIDR：IPv4 地址段
-- IP6-CIDR：IPv6 地址段
-- IP-ASN：自治系统号码
-- GEOIP：GeoIP数据库（国家/地区）匹配
+## 使用方法
+规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/Rule/Advertising/Ad.list
 """
     
     with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
@@ -195,7 +236,7 @@ def git_push():
         repo = git.Repo(REPO_PATH)
         repo.git.add(all=True)
         beijing_time = get_beijing_time()
-        repo.index.commit(f"更新规则: {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
+        repo.index.commit(f"Update rules: {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
         origin = repo.remote(name='origin')
         origin.push()
         print("Successfully pushed to repository")
