@@ -1,5 +1,5 @@
 # 国内分流规则合集
-# 更新时间：2025-03-06 22:16:33 (北京时间)
+# 更新时间：2025-03-06 22:33:40 (北京时间)
 # 合并自以下源：
 # # Lan: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Lan/Lan.list
 # GEOIP: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Direct.list
@@ -23,9 +23,6 @@
 # ======== GEOIP ========
 
 # ======== 去重后的规则 ========
-
-# GEOIP
-GEOIP,CN
 
 # DOMAIN-SUFFIX
 DOMAIN-SUFFIX, local
@@ -189,3 +186,6 @@ IP-CIDR6,::/127,no-resolve
 IP-CIDR6,fc00::/7,no-resolve
 IP-CIDR6,fe80::/10,no-resolve
 IP-CIDR6,ff00::/8,no-resolve
+
+# GEOIP
+GEOIP,CN
