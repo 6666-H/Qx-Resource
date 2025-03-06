@@ -54,7 +54,7 @@ def standardize_rule(line):
         'IP-CIDR,': 'IP-CIDR,',
         'IP6-CIDR,': 'IP-CIDR6,',
         'IP6-CIDR,': 'IP-CIDR6,',
-        'HOST-REGEX,': 'DOMAIN-REGEX,'
+        'HOST-REGEX,': 'DOMAIN-REGEX,',
 	'GEOIP,': 'GEOIP,'
     }
     
