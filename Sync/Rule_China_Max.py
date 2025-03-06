@@ -199,7 +199,7 @@ def download_and_merge_rules():
     final_content += "\n\n# ======== 去重后的规则 ========\n"
     
     # 按组添加规则（保持优先级顺序）
-    for group_name in ['DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']:
+    for group_name in ['DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT','GEOIP']:
         if rule_groups[group_name]:
             final_content += f"\n# {group_name}\n"
             final_content += '\n'.join(rule_groups[group_name])
