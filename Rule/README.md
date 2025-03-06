@@ -1,11 +1,11 @@
 # 国内分流规则合集
 
 ## 更新时间
-2025-03-06 22:08:19 (北京时间)
+2025-03-06 22:16:33 (北京时间)
 
 ## 规则说明
 本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
-当前规则数量：142
+当前规则数量：156
 
 ## 规则来源
 - Lan: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Lan/Lan.list
