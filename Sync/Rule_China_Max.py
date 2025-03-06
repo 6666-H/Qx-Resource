@@ -88,13 +88,13 @@ def standardize_rule(line):
 def get_rule_priority(rule_type):
     """获取规则优先级"""
     priorities = {
-        'DOMAIN-REGEX': 3,
-        'DOMAIN-KEYWORD': 2,
-        'DOMAIN-SUFFIX': 1,
-        'DOMAIN': 4,
-        'IP-CIDR': 5,
-        'IP-CIDR6': 6,
-        'GEOIP': 0
+        'GEOIP': 1,
+        'DOMAIN-REGEX': 4,
+        'DOMAIN-KEYWORD': 3,
+        'DOMAIN-SUFFIX': 2,
+        'DOMAIN': 5,
+        'IP-CIDR': 6,
+        'IP-CIDR6': 7
     }
     return priorities.get(rule_type, 0)
 
@@ -215,7 +215,7 @@ def download_and_merge_rules():
     final_content += "\n\n# ======== 去重后的规则 ========\n"
     
     # 按组添加规则（保持优先级顺序）
-    for group_name in ['DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT', 'GEOIP']:
+    for group_name in ['GEOIP','DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']:
         if rule_groups[group_name]:
             final_content += f"\n# {group_name}\n"
             final_content += '\n'.join(sorted(rule_groups[group_name]))
