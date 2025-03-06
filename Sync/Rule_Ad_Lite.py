@@ -10,14 +10,14 @@ import re
 REPO_PATH = "Rule"
 FILTER_DIR = "Advertising"
 OUTPUT_FILE = "Ad_Lite.list"
-README_PATH = "README_Ad_Lite.md"
+README_PATH = "README_Ad.md"
 WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Ad_White_list.list"
 
 # 分流规则源列表
 FILTER_SOURCES = {
     "ADLite":"https://raw.githubusercontent.com/deezertidal/shadowrocket-rules/refs/heads/main/rule/ADLite.list",
     "AdvertisingLite": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.list"
-}
+ }
 
 def get_beijing_time():
     """获取北京时间"""
@@ -52,7 +52,7 @@ def standardize_rule(line):
         'IP-CIDR,': 'IP-CIDR,',
         'IP6-CIDR,': 'IP-CIDR6,',
         'IP6-CIDR,': 'IP-CIDR6,',
-        'HOST-REGEX,': 'DOMAIN-REGEX,'  # 添加 REGEX 规则转换
+        'HOST-REGEX,': 'DOMAIN-REGEX,'
     }
     
     line = line.strip()
@@ -64,11 +64,9 @@ def standardize_rule(line):
         match = re.match(r'IP-CIDR,([^,]+)', line)
         if match:
             ip_cidr = match.group(1)
-            # 提取 IP 和 CIDR
             ip_parts = ip_cidr.split('/')
             if len(ip_parts) >= 1:
                 ip = ip_parts[0]
-                # 如果没有 CIDR，添加 /32
                 cidr = ip_parts[1] if len(ip_parts) > 1 else "32"
                 return 'IP-CIDR', f"{ip}/{cidr}"
     
@@ -80,8 +78,8 @@ def standardize_rule(line):
 def get_rule_priority(rule_type):
     """获取规则优先级"""
     priorities = {
-        'DOMAIN-REGEX': 1,    # 最高优先级
-        'DOMAIN-KEYWORD': 4,  # 调整其他优先级
+        'DOMAIN-REGEX': 1,
+        'DOMAIN-KEYWORD': 4,
         'DOMAIN-SUFFIX': 3,
         'DOMAIN': 2,
         'IP-CIDR': 5,
@@ -104,23 +102,59 @@ def get_white_list():
         print(f"Error downloading white list: {str(e)}")
         return set()
 
+def remove_duplicates(rules):
+    """去除重复规则"""
+    unique_rules = {}
+    
+    for rule in rules:
+        rule_type, domain = standardize_rule(rule)
+        if domain:
+            # 获取新规则的优先级
+            new_priority = get_rule_priority(rule_type)
+            
+            # 如果域名已存在，比较优先级
+            if domain in unique_rules:
+                current_type, current_priority = unique_rules[domain]
+                if new_priority > current_priority:
+                    unique_rules[domain] = (rule_type, new_priority)
+            else:
+                unique_rules[domain] = (rule_type, new_priority)
+    
+    # 转换回规则格式
+    result = []
+    for domain, (rule_type, _) in unique_rules.items():
+        if rule_type == "IP-CIDR":
+            if '/' in domain:
+                result.append(f"IP-CIDR,{domain}")
+            else:
+                result.append(f"IP-CIDR,{domain}/32")
+        else:
+            result.append(f"{rule_type},{domain}")
+    
+    return sorted(result)
+
 def download_and_merge_rules():
     """下载并合并分流规则"""
     beijing_time = get_beijing_time()
-    header = f"""# 广告拦截分流规则合集
-# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-# 合并自以下源：
-# {chr(10).join([f'# {name}: {url}' for name, url in FILTER_SOURCES.items()])}
-
-"""
     
-    # 存储规则的字典，键为域名/IP，值为元组(规则类型, 优先级)
+    # 存储规则的字典
     rules_dict = {}
     comments = []
 
     # 获取白名单
     white_list = get_white_list()
     print(f"Loaded {len(white_list)} white list rules")
+
+    # 按规则类型分组
+    rule_groups = {
+        'DOMAIN-REGEX': [],
+        'DOMAIN-KEYWORD': [],
+        'DOMAIN-SUFFIX': [],
+        'DOMAIN': [],
+        'IP-CIDR': [],
+        'IP-CIDR6': [],
+        'USER-AGENT': []
+    }
 
     # 下载和处理规则
     for name, url in FILTER_SOURCES.items():
@@ -134,50 +168,43 @@ def download_and_merge_rules():
             
             for line in content.splitlines():
                 rule_type, domain = standardize_rule(line.strip())
-                if domain and domain not in white_list:
-                    # 处理 IP 地址
-                    if is_ip_address(domain):
-                        rules_dict[domain] = ("IP-CIDR", 4)
-                        continue
-
-                    # 获取新规则的优先级
-                    new_priority = get_rule_priority(rule_type)
-                    
-                    # 如果域名已存在，比较优先级
-                    if domain in rules_dict:
-                        current_type, current_priority = rules_dict[domain]
-                        if new_priority > current_priority:
-                            rules_dict[domain] = (rule_type, new_priority)
-                    else:
-                        rules_dict[domain] = (rule_type, new_priority)
+                if rule_type and domain and domain not in white_list:
+                    if rule_type in rule_groups:
+                        rule_groups[rule_type].append(f"{rule_type},{domain}")
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
 
-    # 按规则类型分组
-    rule_groups = {
-        'DOMAIN-REGEX': [],   # 添加 REGEX 组
-        'DOMAIN-KEYWORD': [],
-        'DOMAIN-SUFFIX': [],
-        'DOMAIN': [],
-        'IP-CIDR': [],
-        'IP-CIDR6': [],
-        'USER-AGENT': []
-    }
+    # 统计去重前的规则数量
+    total_before = sum(len(rules) for rules in rule_groups.values())
+    
+    # 生成去重统计信息
+    dedup_stats = ["# 规则去重统计:"]
+    dedup_stats.append(f"# 去重前规则总数: {total_before}")
+    
+    # 对规则进行去重
+    for rule_type in rule_groups:
+        original_count = len(rule_groups[rule_type])
+        rule_groups[rule_type] = remove_duplicates(rule_groups[rule_type])
+        new_count = len(rule_groups[rule_type])
+        dedup_stats.append(f"# {rule_type}: {original_count} -> {new_count} ({original_count - new_count} 条重复)")
+        print(f"{rule_type}: 去重前 {original_count} 条，去重后 {new_count} 条")
 
-    # 整理规则到分组
-    for domain, (rule_type, _) in rules_dict.items():
-        if rule_type == "IP-CIDR":
-            # 检查是否已经包含 CIDR
-            if '/' in domain:
-                rule = f"IP-CIDR,{domain}"
-            else:
-                rule = f"IP-CIDR,{domain}/32"
-        else:
-            rule = f"{rule_type},{domain}"
-        
-        if rule_type in rule_groups:
-            rule_groups[rule_type].append(rule)
+    # 统计去重后的总规则数量
+    total_after = sum(len(rules) for rules in rule_groups.values())
+    dedup_stats.append(f"# 去重后规则总数: {total_after}")
+    dedup_stats.append(f"# 重复规则数: {total_before - total_after}")
+    print(f"总计：去重前 {total_before} 条，去重后 {total_after} 条")
+
+    # 组合文件头部内容
+    header = f"""# 广告拦截分流规则合集
+# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+# 合并自以下源：
+# {chr(10).join([f'# {name}: {url}' for name, url in FILTER_SOURCES.items()])}
+
+{chr(10).join(dedup_stats)}
+
+"""
 
     # 组合最终内容
     final_content = header
@@ -188,16 +215,16 @@ def download_and_merge_rules():
     for group_name in ['DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT']:
         if rule_groups[group_name]:
             final_content += f"\n# {group_name}\n"
-            final_content += '\n'.join(sorted(rule_groups[group_name]))
+            final_content += '\n'.join(rule_groups[group_name])
+            final_content += '\n'
 
     # 写入合并后的文件
     output_path = os.path.join(REPO_PATH, FILTER_DIR, OUTPUT_FILE)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(final_content)
     
-    total_rules = sum(len(rules) for rules in rule_groups.values())
-    print(f"Successfully merged {total_rules} unique rules to {OUTPUT_FILE}")
-    return total_rules
+    print(f"Successfully merged {total_after} unique rules to {OUTPUT_FILE}")
+    return total_after
 
 def update_readme(rule_count):
     """更新 README.md"""
@@ -215,7 +242,7 @@ def update_readme(rule_count):
 {chr(10).join([f'- {name}: {url}' for name, url in FILTER_SOURCES.items()])}
 
 ## 使用方法
-规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/filter/ad_filter.list
+规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/Rule/Advertising/Ad.list
 """
     
     with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
