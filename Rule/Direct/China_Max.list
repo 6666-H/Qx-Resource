@@ -1,5 +1,5 @@
 # 国内分流规则合集
-# 更新时间：2025-03-06 14:29:57 (北京时间)
+# 更新时间：2025-03-06 14:39:29 (北京时间)
 # 合并自以下源：
 # # Lan: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Lan/Lan.list
 # ChinaMax: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/ChinaMax/ChinaMax.list
@@ -32,6 +32,9 @@
 # ======== GEOIP ========
 
 # ======== 去重后的规则 ========
+
+# GEOIP
+GEOIP,CN
 
 # DOMAIN-KEYWORD
 DOMAIN-KEYWORD,.tmall.com,ChinaMax
@@ -117349,6 +117352,3 @@ USER-AGENT,ting_en,ChinaMax
 USER-AGENT,walkman*,ChinaMax
 USER-AGENT,xiami*,ChinaMax
 USER-AGENT,youku*,ChinaMax
-
-# GEOIP
-GEOIP,CN
