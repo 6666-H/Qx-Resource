@@ -9,7 +9,7 @@ import re
 # 配置项
 REPO_PATH = "Rule"
 FILTER_DIR = "Advertising"
-OUTPUT_FILE = "Ad.list"
+OUTPUT_FILE = "All_Ad.list"
 README_PATH = "README_Ad.md"
 WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Ad_White_list.list"
 
