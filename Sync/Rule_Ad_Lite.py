@@ -15,7 +15,7 @@ WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/
 
 # 分流规则源列表
 FILTER_SOURCES = {
-    "AntiAD":"https://raw.githubusercontent.com/deezertidal/shadowrocket-rules/refs/heads/main/rule/ADLite.list",
+    "ADLite":"https://raw.githubusercontent.com/deezertidal/shadowrocket-rules/refs/heads/main/rule/ADLite.list",
     "AdvertisingLite": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.list"
 }
 
