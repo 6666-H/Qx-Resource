@@ -94,7 +94,7 @@ def get_rule_priority(rule_type):
         'DOMAIN': 4,
         'IP-CIDR': 5,
         'IP-CIDR6': 6,
-        'GEOIP': 7
+        'GEOIP': 0
     }
     return priorities.get(rule_type, 0)
 
