@@ -8,16 +8,18 @@ import re
 
 # 配置项
 REPO_PATH = "Rule"
-FILTER_DIR = "Advertising"
-OUTPUT_FILE = "Ad.list"
-README_PATH = "README_Ad.md"
-WHITE_LIST_URL = "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Ad_White_list.list"
+FILTER_DIR = "Direct"
+OUTPUT_FILE = "China_Max.list"
+README_PATH = "README.md"
 
 # 分流规则源列表
 FILTER_SOURCES = {
-    "AntiAD":"https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/AntiAD.list",
-    "Advertising": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Advertising/Advertising.list"
- }
+    "Lan":"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Lan/Lan.list",
+    "ChinaMax": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/ChinaMax/ChinaMax.list",
+    "ChinaMax_2": "https://raw.githubusercontent.com/deezertidal/QuantumultX-Rewrite/refs/heads/master/rule/ChinaMax.list",
+    "Direct_Rule": "https://raw.githubusercontent.com/Code-Dramatist/Rule_Actions/main/Direct_Rule/Direct_Rule.rule",
+    "GEOIP": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Direct.list"
+}
 
 def get_beijing_time():
     """获取北京时间"""
@@ -83,24 +85,11 @@ def get_rule_priority(rule_type):
         'DOMAIN-SUFFIX': 3,
         'DOMAIN': 2,
         'IP-CIDR': 5,
-        'IP-CIDR6': 5
+        'IP-CIDR6': 6,
+        'USER-AGENT': 7,
+        'GEOIP': 8
     }
     return priorities.get(rule_type, 0)
-
-def get_white_list():
-    """获取白名单规则"""
-    try:
-        response = requests.get(WHITE_LIST_URL, timeout=30)
-        response.raise_for_status()
-        white_list = set()
-        for line in response.text.splitlines():
-            _, domain = standardize_rule(line.strip())
-            if domain:
-                white_list.add(domain)
-        return white_list
-    except Exception as e:
-        print(f"Error downloading white list: {str(e)}")
-        return set()
 
 def remove_duplicates(rules):
     """去除重复规则"""
@@ -141,10 +130,6 @@ def download_and_merge_rules():
     rules_dict = {}
     comments = []
 
-    # 获取白名单
-    white_list = get_white_list()
-    print(f"Loaded {len(white_list)} white list rules")
-
     # 按规则类型分组
     rule_groups = {
         'DOMAIN-REGEX': [],
@@ -153,7 +138,8 @@ def download_and_merge_rules():
         'DOMAIN': [],
         'IP-CIDR': [],
         'IP-CIDR6': [],
-        'USER-AGENT': []
+        'USER-AGENT': [],
+        'GEOIP': []
     }
 
     # 下载和处理规则
@@ -168,7 +154,7 @@ def download_and_merge_rules():
             
             for line in content.splitlines():
                 rule_type, domain = standardize_rule(line.strip())
-                if rule_type and domain and domain not in white_list:
+                if rule_type and domain:
                     if rule_type in rule_groups:
                         rule_groups[rule_type].append(f"{rule_type},{domain}")
 
