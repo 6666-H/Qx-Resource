@@ -41,10 +41,14 @@ def is_ip_address(text):
     except ValueError:
         return False
 
+def is_ipv6(ip):
+    """判断是否为 IPv6 地址"""
+    return ':' in ip
+
 def standardize_rule(line):
     """标准化规则格式"""
     if not line or line.startswith('#'):
-        return None, None
+        return None, None, None
     
     # 规则格式转换映射
     replacements = {
@@ -53,30 +57,33 @@ def standardize_rule(line):
         'HOST-KEYWORD,': 'DOMAIN-KEYWORD,',
         'IP-CIDR,': 'IP-CIDR,',
         'IP6-CIDR,': 'IP-CIDR6,',
-        'IP6-CIDR,': 'IP-CIDR6,',
         'HOST-REGEX,': 'DOMAIN-REGEX,',
-	'GEOIP,': 'GEOIP,'
+        'GEOIP,': 'GEOIP,'
     }
     
     line = line.strip()
     for old, new in replacements.items():
         line = line.replace(old, new)
     
-    # 处理 IP-CIDR 规则
-    if line.startswith('IP-CIDR,'):
-        match = re.match(r'IP-CIDR,([^,]+)', line)
-        if match:
-            ip_cidr = match.group(1)
-            ip_parts = ip_cidr.split('/')
-            if len(ip_parts) >= 1:
-                ip = ip_parts[0]
-                cidr = ip_parts[1] if len(ip_parts) > 1 else "32"
-                return 'IP-CIDR', f"{ip}/{cidr}"
-    
     parts = line.split(',')
     if len(parts) >= 2:
-        return parts[0], parts[1].strip()
-    return None, None
+        rule_type = parts[0]
+        domain = parts[1]
+        params = ','.join(parts[2:]) if len(parts) > 2 else ""
+        
+        # 处理 IP-CIDR 和 IP-CIDR6 规则
+        if rule_type == 'IP-CIDR':
+            ip_parts = domain.split('/')
+            if len(ip_parts) >= 1:
+                ip = ip_parts[0]
+                # 如果是 IPv6 地址，将规则类型改为 IP-CIDR6
+                if is_ipv6(ip):
+                    rule_type = 'IP-CIDR6'
+                cidr = ip_parts[1] if len(ip_parts) > 1 else "32" if not is_ipv6(ip) else "128"
+                domain = f"{ip}/{cidr}"
+        
+        return rule_type, domain, params
+    return None, None, None
 
 def get_rule_priority(rule_type):
     """获取规则优先级"""
@@ -88,38 +95,44 @@ def get_rule_priority(rule_type):
         'IP-CIDR': 5,
         'IP-CIDR6': 6,
         'GEOIP': 7
-
     }
     return priorities.get(rule_type, 0)
 
 def remove_duplicates(rules):
-    """去除重复规则"""
+    """去除重复规则，优先保留带参数的规则"""
     unique_rules = {}
     
     for rule in rules:
-        rule_type, domain = standardize_rule(rule)
+        rule_type, domain, params = standardize_rule(rule)
         if domain:
+            # 使用域名作为键
+            key = domain
+            
             # 获取新规则的优先级
             new_priority = get_rule_priority(rule_type)
             
-            # 如果域名已存在，比较优先级
-            if domain in unique_rules:
-                current_type, current_priority = unique_rules[domain]
-                if new_priority > current_priority:
-                    unique_rules[domain] = (rule_type, new_priority)
+            # 如果规则已存在
+            if key in unique_rules:
+                current_type, current_priority, current_params = unique_rules[key]
+                # 如果新规则有参数且旧规则没有参数，或者新规则优先级更高
+                if (params and not current_params) or new_priority > current_priority:
+                    unique_rules[key] = (rule_type, new_priority, params)
             else:
-                unique_rules[domain] = (rule_type, new_priority)
+                unique_rules[key] = (rule_type, new_priority, params)
     
     # 转换回规则格式
     result = []
-    for domain, (rule_type, _) in unique_rules.items():
-        if rule_type == "IP-CIDR":
-            if '/' in domain:
-                result.append(f"IP-CIDR,{domain}")
-            else:
-                result.append(f"IP-CIDR,{domain}/32")
+    for domain, (rule_type, _, params) in unique_rules.items():
+        if rule_type in ['IP-CIDR', 'IP-CIDR6']:
+            rule = f"{rule_type},{domain}"
         else:
-            result.append(f"{rule_type},{domain}")
+            rule = f"{rule_type},{domain}"
+            
+        # 添加额外参数（如果有）
+        if params:
+            rule += f",{params}"
+        
+        result.append(rule)
     
     return sorted(result)
 
@@ -154,10 +167,13 @@ def download_and_merge_rules():
             comments.append(f"\n# ======== {name} ========")
             
             for line in content.splitlines():
-                rule_type, domain = standardize_rule(line.strip())
+                rule_type, domain, params = standardize_rule(line.strip())
                 if rule_type and domain:
                     if rule_type in rule_groups:
-                        rule_groups[rule_type].append(f"{rule_type},{domain}")
+                        rule = f"{rule_type},{domain}"
+                        if params:
+                            rule += f",{params}"
+                        rule_groups[rule_type].append(rule)
 
         except Exception as e:
             print(f"Error downloading {name}: {str(e)}")
@@ -184,7 +200,7 @@ def download_and_merge_rules():
     print(f"总计：去重前 {total_before} 条，去重后 {total_after} 条")
 
     # 组合文件头部内容
-    header = f"""# 广告拦截分流规则合集
+    header = f"""# 国内分流规则合集
 # 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 # 合并自以下源：
 # {chr(10).join([f'# {name}: {url}' for name, url in FILTER_SOURCES.items()])}
@@ -199,10 +215,10 @@ def download_and_merge_rules():
     final_content += "\n\n# ======== 去重后的规则 ========\n"
     
     # 按组添加规则（保持优先级顺序）
-    for group_name in ['DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT','GEOIP']:
+    for group_name in ['DOMAIN-REGEX', 'DOMAIN-KEYWORD', 'DOMAIN-SUFFIX', 'DOMAIN', 'IP-CIDR', 'IP-CIDR6', 'USER-AGENT', 'GEOIP']:
         if rule_groups[group_name]:
             final_content += f"\n# {group_name}\n"
-            final_content += '\n'.join(rule_groups[group_name])
+            final_content += '\n'.join(sorted(rule_groups[group_name]))
             final_content += '\n'
 
     # 写入合并后的文件
@@ -229,7 +245,7 @@ def update_readme(rule_count):
 {chr(10).join([f'- {name}: {url}' for name, url in FILTER_SOURCES.items()])}
 
 ## 使用方法
-规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/Rule/Advertising/Ad.list
+规则文件地址: https://raw.githubusercontent.com/[你的用户名]/[仓库名]/main/Rule/Direct/China_Max.list
 """
     
     with open(os.path.join(REPO_PATH, README_PATH), 'w', encoding='utf-8') as f:
