@@ -77,10 +77,10 @@ def standardize_rule(line):
 def get_rule_priority(rule_type):
     """获取规则优先级"""
     priorities = {
-        'DOMAIN': 1,
-        'DOMAIN-SUFFIX': 2,
-        'DOMAIN-WILDCARD': 3,
-        'DOMAIN-KEYWORD': 4,
+        'DOMAIN-SUFFIX': 1,
+        'DOMAIN-KEYWORD': 2,
+        'DOMAIN': 3,
+        'DOMAIN-WILDCARD': 4,
         'USER-AGENT': 5,
         'IP-CIDR': 6,
         'IP6-CIDR': 7,
@@ -99,10 +99,11 @@ def download_and_merge_rules():
     
     # 存储规则的字典，用于去重和分类
     rules_dict = {
-        'DOMAIN': set(),
+
         'DOMAIN-SUFFIX': set(),
-        'DOMAIN-WILDCARD': set(),
         'DOMAIN-KEYWORD': set(),
+        'DOMAIN': set(),
+        'DOMAIN-WILDCARD': set(),
         'USER-AGENT': set(),
         'IP-CIDR': set(),
         'IP6-CIDR': set(),
@@ -158,10 +159,11 @@ def download_and_merge_rules():
         
         # 按照指定顺序写入规则
         rule_types = [
-            'DOMAIN',
+
             'DOMAIN-SUFFIX',
-            'DOMAIN-WILDCARD',
             'DOMAIN-KEYWORD',
+            'DOMAIN-WILDCARD',
+            'DOMAIN',
             'USER-AGENT',
             'IP-CIDR',
             'IP6-CIDR',
