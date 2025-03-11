@@ -1,4 +1,4 @@
-name: Update Rules_Lan
+name: Update Rules_Direct
 
 on:
   schedule:
@@ -24,7 +24,7 @@ jobs:
           pip install requests GitPython
           
       - name: Run update script
-        run: python Sync/Rule_Lan.py
+        run: python Sync/Rule_Direct.py
       - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions"
