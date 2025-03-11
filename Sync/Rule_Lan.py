@@ -15,6 +15,7 @@ README_PATH = "README.md"
 # 分流规则源列表
 FILTER_SOURCES = {
     "Lan":"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Lan/Lan.list",
+    "Apple":"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/QuantumultX/Apple/Apple.list",
     "GEOIP": "https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Direct.list"
 }
 
