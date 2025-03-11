@@ -17,6 +17,7 @@ class Config:
         self.REWRITE_SOURCES = {
             "京东比价": "https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js",
             "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js",
+            "siri接入4o":"https://raw.githubusercontent.com/SheepFJ/QuantumultX/refs/heads/main/QuantumultX/Siri/aireply/aireply.js",
             "叮当猫合集":"https://raw.githubusercontent.com/chxm1023/Rewrite/main/Reheji.js"
         }
 
