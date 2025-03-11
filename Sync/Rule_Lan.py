@@ -9,7 +9,7 @@ import re
 # 配置项
 REPO_PATH = "Rule"
 FILTER_DIR = "Direct"
-OUTPUT_FILE = "Lan.list"
+OUTPUT_FILE = "Direct.list"
 README_PATH = "README.md"
 
 # 分流规则源列表
