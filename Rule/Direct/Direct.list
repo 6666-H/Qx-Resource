@@ -1,29 +1,27 @@
 # 国内分流规则合集
-# 更新时间：2025-03-11 14:02:23 (北京时间)
+# 更新时间：2025-03-16 10:59:50 (北京时间)
 # 合并自以下源：
 # # Lan: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Lan/Lan.list
 # Apple: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/QuantumultX/Apple/Apple.list
 # GEOIP: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rule/Direct.list
 
 # 规则去重统计:
-# 去重前规则总数: 2013
+# 去重前规则总数: 2002
 # DOMAIN-REGEX: 0 -> 0 (0 条重复)
 # DOMAIN-KEYWORD: 7 -> 7 (0 条重复)
-# DOMAIN-SUFFIX: 1667 -> 1667 (0 条重复)
-# DOMAIN: 274 -> 274 (0 条重复)
-# IP-CIDR: 34 -> 34 (0 条重复)
-# IP-CIDR6: 7 -> 7 (0 条重复)
+# DOMAIN-SUFFIX: 1666 -> 1666 (0 条重复)
+# DOMAIN: 278 -> 278 (0 条重复)
+# IP-CIDR: 24 -> 24 (0 条重复)
+# IP-CIDR6: 4 -> 4 (0 条重复)
 # USER-AGENT: 23 -> 23 (0 条重复)
-# GEOIP: 1 -> 1 (0 条重复)
-# 去重后规则总数: 2013
+# GEOIP: 0 -> 0 (0 条重复)
+# 去重后规则总数: 2002
 # 重复规则数: 0
 
 
 # ======== Lan ========
 
 # ======== Apple ========
-
-# ======== GEOIP ========
 
 # ======== 去重后的规则 ========
 
@@ -37,7 +35,6 @@ DOMAIN-KEYWORD,smp-device,Apple
 DOMAIN-KEYWORD,testflight,Apple
 
 # DOMAIN-SUFFIX
-DOMAIN-SUFFIX, local
 DOMAIN-SUFFIX,0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa
 DOMAIN-SUFFIX,0.in-addr.arpa
 DOMAIN-SUFFIX,1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa
@@ -1714,6 +1711,7 @@ DOMAIN,a5.mzstatic.com,Apple
 DOMAIN,adcdownload.apple.com,Apple
 DOMAIN,adcdownload.apple.com.akadns.net,Apple
 DOMAIN,amp-api-search-edge.apps.apple.com,Apple
+DOMAIN,amp-api-updates.apps.apple.com,Apple
 DOMAIN,amp-api.apps.apple.com,Apple
 DOMAIN,amp-api.fitness.apple.com,Apple
 DOMAIN,amp-api.media.apple.com,Apple
@@ -1743,6 +1741,7 @@ DOMAIN,apptrailers.itunes.apple.com,Apple
 DOMAIN,asusrouter.com
 DOMAIN,audio-ssl.itunes.apple.com,Apple
 DOMAIN,audio.itunes.apple.com,Apple
+DOMAIN,bag-cdn.itunes-apple.com.akadns.net,Apple
 DOMAIN,bag.itunes.apple.com,Apple
 DOMAIN,beatselectronicsllc.tt.omtrdc.net,Apple
 DOMAIN,beta.apple.com,Apple
@@ -1819,6 +1818,7 @@ DOMAIN,gsp85-cn-ssl.ls.apple.com,Apple
 DOMAIN,gspe1-ssl.ls.apple.com,Apple
 DOMAIN,gspe11-2-cn-ssl.ls.apple.com,Apple
 DOMAIN,gspe12-cn-ssl.ls.apple.com,Apple
+DOMAIN,gspe19-2-cn-ssl.ls-apple.com.akadns.net,Apple
 DOMAIN,gspe19-2-cn-ssl.ls.apple.com,Apple
 DOMAIN,gspe19-cn-ssl.ls.apple.com,Apple
 DOMAIN,gspe19-cn.ls-apple.com.akadns.net,Apple
@@ -1857,6 +1857,7 @@ DOMAIN,iosapps.itunes.g.aaplimg.com,Apple
 DOMAIN,ipcdn.apple.com,Apple
 DOMAIN,iphone-ld.apple.com,Apple
 DOMAIN,iphone-ld.origin-apple.com.akadns.net,Apple
+DOMAIN,is-ssl.mzstatic.com-cn-lb.itunes-apple.com.akadns.net,Apple
 DOMAIN,is1-ssl.mzstatic.com,Apple
 DOMAIN,is1.mzstatic.com,Apple
 DOMAIN,is2-ssl.mzstatic.com,Apple
@@ -1982,16 +1983,6 @@ DOMAIN,www.asusrouter.com
 DOMAIN,xp.apple.com,Apple
 
 # IP-CIDR
-IP-CIDR, 0.0.0.0/8
-IP-CIDR, 10.0.0.0/8
-IP-CIDR, 100.64.0.0/10
-IP-CIDR, 127.0.0.0/8
-IP-CIDR, 169.254.0.0/16
-IP-CIDR, 172.16.0.0/12
-IP-CIDR, 192.0.0.0/24
-IP-CIDR, 192.0.2.0/24
-IP-CIDR, 192.168.0.0/16
-IP-CIDR, 224.0.0.0/4
 IP-CIDR,0.0.0.0/8,no-resolve
 IP-CIDR,10.0.0.0/8,no-resolve
 IP-CIDR,100.64.0.0/10,no-resolve
@@ -2018,9 +2009,6 @@ IP-CIDR,63.92.224.0/19,Apple
 IP-CIDR,65.199.22.0/23,Apple
 
 # IP-CIDR6
-IP-CIDR6, ::1/128
-IP-CIDR6, fc00::/7
-IP-CIDR6, fe80::/10
 IP-CIDR6,::/127,no-resolve
 IP-CIDR6,fc00::/7,no-resolve
 IP-CIDR6,fe80::/10,no-resolve
@@ -2050,6 +2038,3 @@ USER-AGENT,fmflocatord*,Apple
 USER-AGENT,geod*,Apple
 USER-AGENT,locationd*,Apple
 USER-AGENT,passd*,Apple
-
-# GEOIP
-GEOIP,CN
