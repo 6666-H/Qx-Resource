@@ -1,0 +1,102 @@
+mixed-port: 7890
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: info
+external-controller: '127.0.0.1:9090'
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  ipv6: false
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  enhanced-mode: redir-host
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+proxy-providers:
+  机场1:
+    type: http
+    url: "https://3.u200.xyz/api/v1/client/subscribe?token=9d780e953137d9eccb92f53cfa0f978c"
+    interval: 172800
+    path: ./proxies/sub1.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+  机场2:
+    type: http
+    url: "http://e0bobsipj7.yousan.us/api/v1/client/subscribe?token=8f79c11d2b65d7025952a21de956d35a"
+    interval: 172800
+    path: ./proxies/sub2.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+
+  机场3:
+    type: http
+    url: "http://127.0.0.1:38324/download/%E4%B8%AD%E7%94%B5%E7%94%B5%E6%B0%94"
+    interval: 172800
+    path: ./proxies/sub3.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+      
+  机场4:
+    type: http
+    url: "http://6bsub.zhunchuanpb.com/api/v1/client/subscribe?token=c372a1d916efa8bccd0d186bab31fb87"
+    interval: 172800
+    path: ./proxies/sub4.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+proxy-groups:
+#分流分组
+  - {name: 最优节点, type: url-test, include-all: true, interval: 600, tolerance: 0, icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png}
+  - {name: 负载均衡, type: load-balance, include-all: true, strategy: round-robin, icon: https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/LoadBalance.png}
+  - {name: 备用机场, type: url-test, use: [机场2,机场3,机场4], interval: 600, tolerance: 0, icon: https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/CaiYun.png}
+  - {name: 推特服务, type: select, proxies: [香港节点, 韩国节点, 美国节点, 最优节点, 台湾节点, 日本节点, 狮城节点, 负载均衡], icon: https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/twitter.png}
+  - {name: 电报服务, type: select, proxies: [最优节点, 负载均衡, 香港节点], icon: https://raw.githubusercontent.com/erdongchanyo/icon/main/Policy-Filter/Telegram.png}
+  - {name: 海外抖音, type: select, proxies: [日本节点, 香港节点, 韩国节点, 狮城节点, 台湾节点, 美国节点], icon: https://raw.githubusercontent.com/lige47/QuanX-icon-rule/main/icon/tiktok.png}
+  - {name: 人工智能, type: select, use: [机场3,机场1, 机场2, 机场4], filter: "(?=.*(GPT|美国|🇺🇸|美國|US|(?i)States|American))^((?!(专线|手游|游戏|(?i)IPLC|IEPL|game)).)*$", icon: https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/chxm1023/ChatGPT5.png}
+  - {name: 游戏服务, type: select, proxies: [香港节点, 日本节点, 美国节点, DIRECT], icon: https://raw.githubusercontent.com/lige47/QuanX-icon-rule/main/icon/game.png}
+  - {name: 广告策略, type: select, proxies: [REJECT, DIRECT], icon: https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/AdGuard.png}
+  - {name: 漏网之鱼, type: select, proxies: [备用机场, 负载均衡, 最优节点, DIRECT], icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Final.png}
+
+#地区分组
+  - {name: 香港节点, type: url-test, include-all: true, interval: 600, tolerance: 0, filter: "(?=.*(香港|HK|(?i)Hong))^((?!(专线|手游|游戏|(?i)IPLC|IEPL|game)).)*$", icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HK.png}
+  - {name: 台湾节点, type: url-test, include-all: true, interval: 600, tolerance: 0, filter: "(?=.*(台湾|台灣|TW|(?i)Taiwan))^((?!(专线|手游|游戏|(?i)IPLC|IEPL|game)).)*$", icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TW.png}
+  - {name: 日本节点, type: url-test, include-all: true, interval: 600, tolerance: 0, filter: "(?=.*(日本|🇯🇵|jp|(?i)Japan))^((?!(专线|手游|游戏|(?i)IPLC|IEPL|game)).)*$", icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/JP.png}
+  - {name: 狮城节点, type: url-test, include-all: true, interval: 600, tolerance: 0, filter: "(?=.*(新加坡|🇸🇬|狮城|SG|(?i)Singapore))^((?!(专线|手游|游戏|(?i)IPLC|IEPL|game)).)*$", icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/SG.png}
+  - {name: 韩国节点, type: url-test, include-all: true, interval: 600, tolerance: 0, filter: "(?=.*(韩国|🇰🇷|韓國|南朝鲜|KR|(?i)Korean))^((?!(专线|手游|游戏|(?i)IPLC|IEPL|game)).)*$", icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/KR.png}
+  - {name: 美国节点, type: url-test, include-all: true, interval: 600, tolerance: 0, filter: "(?=.*(美国|🇺🇸|美國|US|(?i)States|American))^((?!(专线|手游|游戏|(?i)IPLC|IEPL|game)).)*$", icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/US.png}
+
+rule-providers:
+  ADLite: {behavior: classical, interval: 172800, format: text, type: http, url: https://whatshub.top/rule/ADLite.list, path: ./ruleset/ADLite.yaml}
+  TikTok: {behavior: classical, interval: 172800, format: text, type: http, url: https://whatshub.top/rule/TikTok.list, path: ./ruleset/TikTok.yaml}
+  Game: {behavior: classical, interval: 172800, format: text, type: http, url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Game/Game.list, path: ./ruleset/Game.yaml}
+  AI: {behavior: classical, interval: 172800, format: text, type: http, url: https://whatshub.top/rule/ai.list, path: ./ruleset/AI.yaml}
+  Twitter: {behavior: classical, interval: 172800, format: text, type: http, url: https://whatshub.top/rule/Twitter.list, path: ./ruleset/Twitter.yaml}
+  Telegram: {behavior: classical, interval: 172800, format: text, type: http, url: https://whatshub.top/rule/Telegram.list, path: ./ruleset/Telegram.yaml}
+  Apple: {behavior: classical, interval: 172800, format: text, type: http, url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Apple/Apple_All.list, path: ./ruleset/Apple.yaml}
+  Lan: {behavior: classical, interval: 172800, format: text, type: http, url: https://raw.githubusercontent.com/6666-H/Qx-Resource/main/Manual/Rule/Lan.list, path: ./ruleset/Lan.yaml}
+  All_Ad: {behavior: classical, interval: 86400, format: text, type: http, url: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/main/Rule/Advertising/All_Ad.list, path: ./ruleset/All_Ad.yaml}
+rules:
+  - RULE-SET,ADLite,广告策略
+  - RULE-SET,All_Ad,广告策略
+  - RULE-SET,TikTok,海外抖音
+  - RULE-SET,Game,游戏服务
+  - RULE-SET,AI,人工智能
+  - RULE-SET,Twitter,推特服务
+  - RULE-SET,Telegram,电报服务
+  - RULE-SET,Apple,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,漏网之鱼
