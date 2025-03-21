@@ -1,19 +1,19 @@
 # 广告拦截分流规则合集
-# 更新时间：2025-03-20 10:56:33 (北京时间)
+# 更新时间：2025-03-21 10:58:52 (北京时间)
 # 合并自以下源：
 # # ADLite: https://raw.githubusercontent.com/deezertidal/shadowrocket-rules/refs/heads/main/rule/ADLite.list
 # AdvertisingLite: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rewrite/QuantumultX/AdvertisingLite/AdvertisingLite.list
 
 # 规则去重统计:
-# 去重前规则总数: 36947
+# 去重前规则总数: 36959
 # DOMAIN-REGEX: 0 -> 0 (0 条重复)
 # DOMAIN-KEYWORD: 183 -> 183 (0 条重复)
-# DOMAIN-SUFFIX: 36450 -> 36421 (29 条重复)
+# DOMAIN-SUFFIX: 36462 -> 36433 (29 条重复)
 # DOMAIN: 2 -> 2 (0 条重复)
 # IP-CIDR: 311 -> 309 (2 条重复)
 # IP-CIDR6: 1 -> 1 (0 条重复)
 # USER-AGENT: 0 -> 0 (0 条重复)
-# 去重后规则总数: 36916
+# 去重后规则总数: 36928
 # 重复规则数: 31
 
 
@@ -4755,6 +4755,7 @@ DOMAIN-SUFFIX,attributedrelease.com
 DOMAIN-SUFFIX,attribution.report
 DOMAIN-SUFFIX,attritioncombustible.com
 DOMAIN-SUFFIX,atttkaapqvh.com
+DOMAIN-SUFFIX,attuneuvito.com
 DOMAIN-SUFFIX,atwola.com
 DOMAIN-SUFFIX,atzekromchan.com
 DOMAIN-SUFFIX,atzhcjv.xyz
@@ -5665,6 +5666,7 @@ DOMAIN-SUFFIX,beingajoyto.info
 DOMAIN-SUFFIX,beingajoytow.com
 DOMAIN-SUFFIX,beingsjeanssent.com
 DOMAIN-SUFFIX,bejirachir.com
+DOMAIN-SUFFIX,bekd.cn
 DOMAIN-SUFFIX,bekrookodilechan.com
 DOMAIN-SUFFIX,belamicash.com
 DOMAIN-SUFFIX,belatedsafety.pro
@@ -14681,6 +14683,7 @@ DOMAIN-SUFFIX,generousclickmillennium.com
 DOMAIN-SUFFIX,generousfilming.com
 DOMAIN-SUFFIX,genesismedia.com
 DOMAIN-SUFFIX,geneticesteemreasonable.com
+DOMAIN-SUFFIX,geneurawipers.com
 DOMAIN-SUFFIX,genfpm.com
 DOMAIN-SUFFIX,geniad.net
 DOMAIN-SUFFIX,genieedmp.com
@@ -17820,6 +17823,7 @@ DOMAIN-SUFFIX,isquitehappymut.org
 DOMAIN-SUFFIX,isreputysolomo.com
 DOMAIN-SUFFIX,issomeoneinth.info
 DOMAIN-SUFFIX,issuedindiscreetcounsel.com
+DOMAIN-SUFFIX,isteetashy.com
 DOMAIN-SUFFIX,istkechaukrguk.com
 DOMAIN-SUFFIX,istlnkbn.com
 DOMAIN-SUFFIX,istoanaugrub.xyz
@@ -19458,6 +19462,7 @@ DOMAIN-SUFFIX,lby2kd27c.com
 DOMAIN-SUFFIX,lcd.aivote.com
 DOMAIN-SUFFIX,lcebfpvqdbih.com
 DOMAIN-SUFFIX,lcefsf.icu
+DOMAIN-SUFFIX,lcidauv.top
 DOMAIN-SUFFIX,lclimil.top
 DOMAIN-SUFFIX,lcloperoxeo.xyz
 DOMAIN-SUFFIX,lclqbh.icu
@@ -25974,6 +25979,7 @@ DOMAIN-SUFFIX,psoakichoax.xyz
 DOMAIN-SUFFIX,psoamaupsie.net
 DOMAIN-SUFFIX,psoanoaweek.net
 DOMAIN-SUFFIX,psoansumt.net
+DOMAIN-SUFFIX,psoaphorsoa.com
 DOMAIN-SUFFIX,psoasusteech.net
 DOMAIN-SUFFIX,psockapa.net
 DOMAIN-SUFFIX,psohemsinso.xyz
@@ -27719,6 +27725,7 @@ DOMAIN-SUFFIX,ridingdisguisessuffix.com
 DOMAIN-SUFFIX,ridirre.com
 DOMAIN-SUFFIX,ridleward.info
 DOMAIN-SUFFIX,ridmilestone.com
+DOMAIN-SUFFIX,riedrused.com
 DOMAIN-SUFFIX,riemutmh.com
 DOMAIN-SUFFIX,riffingwiener.com
 DOMAIN-SUFFIX,rifjhukaqoh.com
@@ -28411,6 +28418,7 @@ DOMAIN-SUFFIX,saltconfectionery.com
 DOMAIN-SUFFIX,saltpairwoo.live
 DOMAIN-SUFFIX,saltsarchlyseem.com
 DOMAIN-SUFFIX,saltsleaseholder.com
+DOMAIN-SUFFIX,saltsmute.com
 DOMAIN-SUFFIX,saltsupbrining.com
 DOMAIN-SUFFIX,salutationpersecutewindows.com
 DOMAIN-SUFFIX,salvagefloat.com
@@ -29798,6 +29806,7 @@ DOMAIN-SUFFIX,socksupgradeproposed.com
 DOMAIN-SUFFIX,sockwardrobe.com
 DOMAIN-SUFFIX,sodallay.com
 DOMAIN-SUFFIX,sodamash.com
+DOMAIN-SUFFIX,sodenneyg.com
 DOMAIN-SUFFIX,sodhef.com
 DOMAIN-SUFFIX,sodiumcupboard.com
 DOMAIN-SUFFIX,sodiumendlesslyhandsome.com
@@ -30062,6 +30071,7 @@ DOMAIN-SUFFIX,spirteddvaita.com
 DOMAIN-SUFFIX,spitretired.com
 DOMAIN-SUFFIX,spitspacecraftfraternity.com
 DOMAIN-SUFFIX,spitzrafting.top
+DOMAIN-SUFFIX,spkh.cn
 DOMAIN-SUFFIX,spklmis.com
 DOMAIN-SUFFIX,splashfloating.com
 DOMAIN-SUFFIX,splashforgodm.com
@@ -32980,6 +32990,7 @@ DOMAIN-SUFFIX,uhegarberetrof.com
 DOMAIN-SUFFIX,uhfdsplo.com
 DOMAIN-SUFFIX,uhi02121uik.xyz
 DOMAIN-SUFFIX,uhi02130uik.xyz
+DOMAIN-SUFFIX,uhityllhn.com
 DOMAIN-SUFFIX,uhmcjdc.icu
 DOMAIN-SUFFIX,uhodsplo.com
 DOMAIN-SUFFIX,uhpdsplo.com
@@ -36534,6 +36545,7 @@ DOMAIN-SUFFIX,zqgixxp.icu
 DOMAIN-SUFFIX,zqjklzajmmwq.top
 DOMAIN-SUFFIX,zqjljeyqbejrb.top
 DOMAIN-SUFFIX,zqkxlf.com
+DOMAIN-SUFFIX,zqntbc.top
 DOMAIN-SUFFIX,zqpztal.com
 DOMAIN-SUFFIX,zqtk.net
 DOMAIN-SUFFIX,zqwe.ru
