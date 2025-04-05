@@ -16,7 +16,8 @@ class Config:
         # 规则源
         self.REWRITE_SOURCES = {
             "京东比价": "https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js",
-            "谷歌重定向":"https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/Google%E9%87%8D%E5%AE%9A%E5%90%91.beta.sgmodule"
+            "微信链接跳转":"https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/%E5%BE%AE%E4%BF%A1%E5%A4%96%E9%83%A8%E9%93%BE%E6%8E%A5%E8%A7%A3%E9%94%81.beta.sgmodule",
+            "谷歌重定向":"https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Beta/Google%E9%87%8D%E5%AE%9A%E5%90%91.beta.sgmodule",
             "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js",
             "叮当猫合集":"https://raw.githubusercontent.com/chxm1023/Rewrite/main/Reheji.js",
             "body合集":"https://raw.githubusercontent.com/Yu9191/Rewrite/refs/heads/main/Revenuecat.js",
