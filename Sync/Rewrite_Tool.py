@@ -15,7 +15,7 @@ class Config:
         # "京东比价": "https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js",
         # 规则源
         self.REWRITE_SOURCES = {
-            "京东比价": "https://github.com/ddgksf2013/Modules/raw/main/JD_Price.sgmodule",
+            "京东比价": "https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule",
             "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js",
             "叮当猫合集":"https://raw.githubusercontent.com/chxm1023/Rewrite/main/Reheji.js",
             "body合集":"https://raw.githubusercontent.com/Yu9191/Rewrite/refs/heads/main/Revenuecat.js",
