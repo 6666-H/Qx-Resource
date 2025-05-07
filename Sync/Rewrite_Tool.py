@@ -15,14 +15,8 @@ class Config:
         # "京东比价": "https://raw.githubusercontent.com/mw418/Loon/main/script/jd_price.js",
         # 规则源
         self.REWRITE_SOURCES = {
-            "谷歌重定向":"https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Google%E9%87%8D%E5%AE%9A%E5%90%91.sgmodule",
             "京东比价": "https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule",
-            "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js",
-            "叮当猫合集":"https://raw.githubusercontent.com/chxm1023/Rewrite/main/Reheji.js",
-            "body合集":"https://raw.githubusercontent.com/Yu9191/Rewrite/refs/heads/main/Revenuecat.js",
-            "墨鱼解锁合集":"https://raw.githubusercontent.com/ddgksf2013/Modules/refs/heads/main/RevenueCat.Vip.sgmodule",
-            "sooyaaabo解锁合集":"https://raw.githubusercontent.com/sooyaaabo/Loon/main/Plugin/RevenueCat.plugin",
-            "枫叶脚本解锁":"https://raw.githubusercontent.com/afengye/QX/main/crack.js"
+            "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js"
         }
 
 class RuleProcessor:
