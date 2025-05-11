@@ -1,18 +1,21 @@
-# 自建重写解锁合集
+# 自建重写广告合集
 
 ## 更新时间
-2025-05-08 00:37:03 (北京时间)
+2025-05-11 11:14:48 (北京时间)
 
 ## 规则说明
-本重写规则集合并自各个开源规则。
-
-## 规则统计
-- MITM主机数量：3
-- [SCRIPT] 规则数量：2
-- [MITM] 规则数量：54
-- [REWRITE_LOCAL] 规则数量：1
-
+本重写规则集合并自各个开源规则，去除重复规则。
+- Url-Rewrite 规则数量：53
+- Script 规则数量：467
+- Url Rewrite 规则数量：797
+- Mitm 规则数量：0
+- Host 规则数量：672
+- Map Local 规则数量：1351
+- General 规则数量：1
+- Rule 规则数量：88
+- Body Rewrite 规则数量：27
 
 ## 规则来源
-- 京东比价: https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule
-- 1998解锁: https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js
+- whatshubs开屏屏蔽: https://raw.githubusercontent.com/6666-H/QuantumultX-Resource/refs/heads/main/Manual/Rewrite/Adultraplus.config
+- surge去广告: https://raw.githubusercontent.com/QingRex/LoonKissSurge/refs/heads/main/Surge/Official/%E6%96%B0%E6%89%8B%E5%8F%8B%E5%A5%BD%E3%81%AE%E5%8E%BB%E5%B9%BF%E5%91%8A%E9%9B%86%E5%90%88.official.sgmodule
+- chxm去广告: https://raw.githubusercontent.com/chxm1023/Advertising/main/AppAd.conf
