@@ -1,8 +1,9 @@
 ﻿# 被墙服务分流规则合集
-# 更新时间：2025-05-12 11:08:06 (北京时间)
+# 更新时间：2025-05-12 16:38:21 (北京时间)
 # 来源：
 # Google: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
 # Telegram: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Telegram/Telegram.list
+# TikTok: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/TikTok/TikTok.list
 # GitHub: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/GitHub/GitHub.list
 # Twitter: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Twitter/Twitter.list
 # Facebook: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Facebook/Facebook.list
@@ -11,10 +12,13 @@
 # Discord: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Discord/Discord.list
 # YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
 
-# 规则总数: 1610
+# 规则总数: 1639
 
 DOMAIN,api.imem.app
 DOMAIN,api.swiftgram.app
+DOMAIN,lf16-effectcdn.byteeffecttos-g.com
+DOMAIN,lf16-pkgcdn.pitaya-clientai.com
+DOMAIN,p16-tiktokcdn-com.akamaized.net
 DOMAIN,voice.telephony.goog
 DOMAIN-KEYWORD,appspot
 DOMAIN-KEYWORD,blogspot
@@ -24,8 +28,10 @@ DOMAIN-KEYWORD,github
 DOMAIN-KEYWORD,gmail
 DOMAIN-KEYWORD,google
 DOMAIN-KEYWORD,instagram
+DOMAIN-KEYWORD,musical.ly
 DOMAIN-KEYWORD,nicegram
 DOMAIN-KEYWORD,recaptcha
+DOMAIN-KEYWORD,tiktok
 DOMAIN-KEYWORD,twitter
 DOMAIN-KEYWORD,youtube
 DOMAIN-SUFFIX,0emm.com
@@ -194,7 +200,11 @@ DOMAIN-SUFFIX,bumptop.org
 DOMAIN-SUFFIX,bumptunes.com
 DOMAIN-SUFFIX,buyingfacebooklikes.com
 DOMAIN-SUFFIX,buyoculus.com
+DOMAIN-SUFFIX,bytedapm.com
+DOMAIN-SUFFIX,bytegecko-i18n.com
+DOMAIN-SUFFIX,byteoversea.com
 DOMAIN-SUFFIX,campuslondon.com
+DOMAIN-SUFFIX,capcut.com
 DOMAIN-SUFFIX,capitalg.com
 DOMAIN-SUFFIX,careersatfb.com
 DOMAIN-SUFFIX,carstagram.com
@@ -1007,6 +1017,8 @@ DOMAIN-SUFFIX,hwgo.com
 DOMAIN-SUFFIX,i.org
 DOMAIN-SUFFIX,iam.soy
 DOMAIN-SUFFIX,iamremarkable.org
+DOMAIN-SUFFIX,ibytedtos.com
+DOMAIN-SUFFIX,ibyteimg.com
 DOMAIN-SUFFIX,ig.me
 DOMAIN-SUFFIX,igcdn.com
 DOMAIN-SUFFIX,igoogle.com
@@ -1068,6 +1080,8 @@ DOMAIN-SUFFIX,intagrm.com
 DOMAIN-SUFFIX,internet.org
 DOMAIN-SUFFIX,intgram.com
 DOMAIN-SUFFIX,ip6.static.sl-reverse.com
+DOMAIN-SUFFIX,ipstatp.com
+DOMAIN-SUFFIX,isnssdk.com
 DOMAIN-SUFFIX,itasoftware.com
 DOMAIN-SUFFIX,j2objc.org
 DOMAIN-SUFFIX,jibemobile.com
@@ -1106,6 +1120,8 @@ DOMAIN-SUFFIX,mobileview.page
 DOMAIN-SUFFIX,moneywithfacebook.com
 DOMAIN-SUFFIX,monitoring.qpdp1.net
 DOMAIN-SUFFIX,moodstocks.com
+DOMAIN-SUFFIX,muscdn.com
+DOMAIN-SUFFIX,musical.ly
 DOMAIN-SUFFIX,myfbfans.com
 DOMAIN-SUFFIX,myoctocat.com
 DOMAIN-SUFFIX,nbabot.net
@@ -1232,9 +1248,11 @@ DOMAIN-SUFFIX,schema.org
 DOMAIN-SUFFIX,schemer.com
 DOMAIN-SUFFIX,screenwisetrends.com
 DOMAIN-SUFFIX,screenwisetrendspanel.com
+DOMAIN-SUFFIX,sgpstatp.com
 DOMAIN-SUFFIX,shattered.io
 DOMAIN-SUFFIX,shopfacebook.com
 DOMAIN-SUFFIX,snapseed.com
+DOMAIN-SUFFIX,snssdk.com
 DOMAIN-SUFFIX,solveforx.com
 DOMAIN-SUFFIX,sportsfacebook.com
 DOMAIN-SUFFIX,sportstream.com
@@ -1281,8 +1299,18 @@ DOMAIN-SUFFIX,theinstagramhack.com
 DOMAIN-SUFFIX,thinkquarterly.co.uk
 DOMAIN-SUFFIX,thinkquarterly.com
 DOMAIN-SUFFIX,thinkwithgoogle.com
+DOMAIN-SUFFIX,tik-tokapi.com
+DOMAIN-SUFFIX,tiktok.com
+DOMAIN-SUFFIX,tiktokcdn-us.com
+DOMAIN-SUFFIX,tiktokcdn.com
+DOMAIN-SUFFIX,tiktokd.net
+DOMAIN-SUFFIX,tiktokd.org
+DOMAIN-SUFFIX,tiktokmusic.app
+DOMAIN-SUFFIX,tiktokv.com
+DOMAIN-SUFFIX,tiktokv.us
 DOMAIN-SUFFIX,tiltbrush.com
 DOMAIN-SUFFIX,toplayerserver.com
+DOMAIN-SUFFIX,ttwebview.com
 DOMAIN-SUFFIX,tweetdeck.com
 DOMAIN-SUFFIX,twimg.co
 DOMAIN-SUFFIX,twimg.com
@@ -1608,6 +1636,7 @@ PROCESS-NAME,com.android.vending
 PROCESS-NAME,com.google.android.gms
 PROCESS-NAME,com.google.android.gsf
 PROCESS-NAME,com.google.android.play.games
+PROCESS-NAME,com.zhiliaoapp.musically
 PROCESS-NAME,nekox.messenger
 PROCESS-NAME,org.telegram.messenger
 PROCESS-NAME,telegram-desktop
@@ -1619,6 +1648,7 @@ USER-AGENT,*com.google.Drive*
 USER-AGENT,*com.google.ios.youtubemusic*
 USER-AGENT,*youtube*
 USER-AGENT,Google.Drive*
+USER-AGENT,TikTok*
 USER-AGENT,YouTube*
 USER-AGENT,YouTubeMusic*
 USER-AGENT,com.google.ios.youtube*
