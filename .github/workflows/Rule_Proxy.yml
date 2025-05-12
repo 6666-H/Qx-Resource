@@ -1,4 +1,4 @@
-name: Update Rules_Direct
+name: Update Rules_Proxy
 
 on:
   schedule:
