@@ -1,11 +1,11 @@
 # 广告拦截分流规则合集
 
 ## 更新时间
-2025-06-03 11:17:03 (北京时间)
+2025-06-04 11:17:36 (北京时间)
 
 ## 规则说明
 本规则集合并自各个开源规则，将 HOST 类规则统一转换为 DOMAIN 格式。
-当前规则数量：36190
+当前规则数量：36274
 
 ## 规则来源
 - ADLite: https://raw.githubusercontent.com/deezertidal/shadowrocket-rules/refs/heads/main/rule/ADLite.list
