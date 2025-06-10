@@ -23,7 +23,8 @@ FILTER_SOURCES = {
     "Instagram":  "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Instagram/Instagram.list",
     "Reddit":     "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Reddit/Reddit.list",
     "Discord":    "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Discord/Discord.list",
-    "YouTube":    "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list"
+    "YouTube":    "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list",
+    "Grok":    "https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Grok.list"
 }
 
 def get_beijing_time():
