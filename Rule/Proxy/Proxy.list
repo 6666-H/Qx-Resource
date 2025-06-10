@@ -1,5 +1,5 @@
 ﻿# 被墙服务分流规则合集
-# 更新时间：2025-06-01 11:38:05 (北京时间)
+# 更新时间：2025-06-10 22:23:21 (北京时间)
 # 来源：
 # Google: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
 # Telegram: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Telegram/Telegram.list
@@ -11,8 +11,9 @@
 # Reddit: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Reddit/Reddit.list
 # Discord: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Discord/Discord.list
 # YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
+# Grok: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Grok.list
 
-# 规则总数: 1639
+# 规则总数: 1641
 
 DOMAIN,api.imem.app
 DOMAIN,api.swiftgram.app
@@ -977,6 +978,7 @@ DOMAIN-SUFFIX,goolge.com
 DOMAIN-SUFFIX,gooogle.com
 DOMAIN-SUFFIX,graph.org
 DOMAIN-SUFFIX,gridaware.app
+DOMAIN-SUFFIX,grok.com
 DOMAIN-SUFFIX,groups.com
 DOMAIN-SUFFIX,gsrc.io
 DOMAIN-SUFFIX,gstatic-cn.com
@@ -1394,6 +1396,7 @@ DOMAIN-SUFFIX,wwwfacebok.com
 DOMAIN-SUFFIX,wwwfacebook.com
 DOMAIN-SUFFIX,wwwinstagram.com
 DOMAIN-SUFFIX,wwwmfacebook.com
+DOMAIN-SUFFIX,x.ai
 DOMAIN-SUFFIX,x.com
 DOMAIN-SUFFIX,x.company
 DOMAIN-SUFFIX,x.team
