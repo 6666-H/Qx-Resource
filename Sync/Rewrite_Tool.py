@@ -16,7 +16,6 @@ class Config:
         # 规则源
         self.REWRITE_SOURCES = {
             "京东比价": "https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule",
-            "1998解锁": "https://raw.githubusercontent.com/Yu9191/Rewrite/main/1998.js",
             "谷歌重定向":"https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config"
         }
 
