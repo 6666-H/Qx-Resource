@@ -14,6 +14,7 @@ OUTPUT_FILE = "Proxy.list"
 
 # 分流规则源列表（仅保留被墙服务）
 FILTER_SOURCES = {
+    "Manual_Proxy": "https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Proxy.list",
     "Google":     "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list",
     "Telegram":   "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Telegram/Telegram.list",
     "TikTok":"https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/TikTok/TikTok.list",
