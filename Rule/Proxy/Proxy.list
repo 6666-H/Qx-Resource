@@ -1,5 +1,5 @@
 ﻿# 被墙服务分流规则合集
-# 更新时间：2025-07-31 12:02:37 (北京时间)
+# 更新时间：2025-08-01 12:12:52 (北京时间)
 # 来源：
 # Manual_Proxy: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Proxy.list
 # Google: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
@@ -14,7 +14,7 @@
 # YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
 # Grok: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Grok.list
 
-# 规则总数: 1644
+# 规则总数: 1647
 
 DOMAIN,api.imem.app
 DOMAIN,api.swiftgram.app
@@ -22,6 +22,7 @@ DOMAIN,lf16-effectcdn.byteeffecttos-g.com
 DOMAIN,lf16-pkgcdn.pitaya-clientai.com
 DOMAIN,miss1.net
 DOMAIN,p16-tiktokcdn-com.akamaized.net
+DOMAIN,trae-api-sg.mchost.guru
 DOMAIN,voice.telephony.goog
 DOMAIN-KEYWORD,appspot
 DOMAIN-KEYWORD,blogspot
@@ -205,6 +206,7 @@ DOMAIN-SUFFIX,buyingfacebooklikes.com
 DOMAIN-SUFFIX,buyoculus.com
 DOMAIN-SUFFIX,bytedapm.com
 DOMAIN-SUFFIX,bytegecko-i18n.com
+DOMAIN-SUFFIX,byteintlapi.com
 DOMAIN-SUFFIX,byteoversea.com
 DOMAIN-SUFFIX,campuslondon.com
 DOMAIN-SUFFIX,capcut.com
@@ -1110,6 +1112,7 @@ DOMAIN-SUFFIX,m.me
 DOMAIN-SUFFIX,madewithcode.com
 DOMAIN-SUFFIX,makeitopen.com
 DOMAIN-SUFFIX,markzuckerberg.com
+DOMAIN-SUFFIX,marscode.com
 DOMAIN-SUFFIX,material.io
 DOMAIN-SUFFIX,mbrx.app
 DOMAIN-SUFFIX,mcrouter.net
