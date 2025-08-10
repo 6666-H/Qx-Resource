@@ -17,7 +17,8 @@ class Config:
         self.REWRITE_SOURCES = {
             "京东比价": "https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule",
             "懒人听书": "https://raw.githubusercontent.com/WeiGiegie/666/main/lrts.js",
-            "谷歌重定向":"https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config"
+            "谷歌重定向":"https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config",
+            "ReLens":"https://raw.githubusercontent.com/chxm1023/Rewrite/main/ReLens.js"
         }
 
 class RuleProcessor:
