@@ -2,12 +2,12 @@ import os
 import requests
 import datetime
 from datetime import timedelta
-from typing import Dict, Set, List
+from typing import Dict
 
 class Config:
     def __init__(self):
         self.REPO_PATH = "Rewrite"
-        self.REWRITE_DIR = "Tool" 
+        self.REWRITE_DIR = "Tool"
         self.OUTPUT_FILE = "Tool.config"
         self.README_PATH = "README_Rewrite.md"
         self.TIMEOUT = 30
@@ -23,7 +23,7 @@ class Config:
         }
 
 class RuleProcessor:
-    def __init__(self, config):
+    def __init__(self, config: Config):
         self.config = config
 
     def download_rule(self, name: str, url: str) -> tuple:
@@ -36,11 +36,7 @@ class RuleProcessor:
             return name, None
 
     def process_rules(self, content: str) -> Dict[str, any]:
-        rules = {
-            'sections': {},
-            'host': set()
-        }
-
+        rules = {'sections': {}, 'host': set()}
         if not content:
             return rules
 
@@ -63,19 +59,17 @@ class RuleProcessor:
             # 添加到当前标签
             rules['sections'][current_section].append(line)
 
-            # 收集 hostname
+            # 收集 hostname，去空格、小写、去重
             if 'hostname' in line.lower() and '=' in line:
-                hostname = line.split('=')[1].strip()
-                if hostname:
-                    rules['host'].update(hostname.split(','))
+                host_str = line.split('=', 1)[1].strip()
+                if host_str:
+                    hosts = [h.strip().lower() for h in host_str.split(',') if h.strip()]
+                    rules['host'].update(hosts)
 
         return rules
 
     def merge_rules(self) -> Dict[str, any]:
-        merged_rules = {
-            'sections': {},
-            'host': set()
-        }
+        merged_rules = {'sections': {}, 'host': set()}
 
         for name, url in self.config.REWRITE_SOURCES.items():
             print(f"Downloading {name}...")
