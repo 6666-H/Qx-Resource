@@ -1,19 +1,18 @@
 # 自建重写解锁合集
 
 ## 更新时间
-2025-08-19 11:14:00 (北京时间)
+2025-08-19 11:40:35 (北京时间)
 
 ## 规则说明
-本重写规则集合并自各个开源规则，自动归并 hostname 到 [MITM]，并保留 [MITM] 下其它配置项。
+本重写规则集合并自各个开源规则。
 
 ## 规则统计
-- MITM 主机数量：384
+- MITM主机数量：384
 - [REWRITE] 规则数量：159
 - [SCRIPT] 规则数量：2
-- [MITM] 规则数量：0
+- [MITM] 规则数量：91
 - [REWRITE_LOCAL] 规则数量：5
 
-- MITM 其它配置项数量：65
 
 ## 规则来源
 - 京东比价: https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule
