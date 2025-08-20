@@ -18,10 +18,7 @@ class Config:
             "懒人听书": "https://raw.githubusercontent.com/WeiGiegie/666/main/lrts.js",
             "谷歌重定向": "https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config",
             "ReLens": "https://raw.githubusercontent.com/chxm1023/Rewrite/main/ReLens.js",
-            "微信110解锁被屏蔽的URL": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/Function/UnblockURLinWeChat.conf",
-            "哔哩哔哩广告净化": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/BilibiliAds.conf",
-            "Google自动翻页": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/Html/EndlessGoogle.conf",
-            "百度搜索去广告": "https://raw.githubusercontent.com/limbopro/Adblock4limbo/main/Adblock4limbo.conf",
+            "哔哩哔哩广告净化": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/BilibiliAds.conf"
         }
 
 class RuleProcessor:
