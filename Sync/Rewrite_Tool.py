@@ -99,19 +99,18 @@ class RuleProcessor:
             if current_section not in self.ALLOWED_SECTIONS:
                 continue
 
-            # 🚫 检测是否是 js 源码
-            if line.strip().startswith(("function ", "var ", "let ", "const ")):
+            # 🚫 跳过 JS 赋值块
+            if re.match(r'^\s*var\s+\w+\s*=\s*JSON\.parse\(\$response\.body\);', line):
+                continue
+            if re.match(r'^\s*\w+\s*=\s*{', line):
                 in_js_block = True
                 continue
             if in_js_block:
-                if not line.strip() or re.match(r'^\S', line):  # 碰到空行/非缩进行 => 退出 JS 块
+                if line.strip().endswith("};"):
                     in_js_block = False
-                else:
-                    continue
-            if in_js_block:
                 continue
 
-            # ✅ 保留一行规则
+            # ✅ 保留规则行
             out['sections'][current_section].append(line)
 
         return out
