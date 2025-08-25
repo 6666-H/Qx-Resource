@@ -14,11 +14,10 @@ class Config:
         self.TIMEOUT = 30
         # 规则源（保持你原来的）
         self.REWRITE_SOURCES = {
-            "京东比价": "https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule",
-            "懒人听书": "https://raw.githubusercontent.com/WeiGiegie/666/main/lrts.js",
             "谷歌重定向": "https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config",
+            "京东比价": "https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule",
             "ReLens": "https://raw.githubusercontent.com/chxm1023/Rewrite/main/ReLens.js",
-            "哔哩哔哩广告净化": "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/BilibiliAds.conf"
+            "懒人听书": "https://raw.githubusercontent.com/WeiGiegie/666/main/lrts.js"
         }
 
 class RuleProcessor:
