@@ -61,12 +61,11 @@ class RuleProcessor:
                 continue
 
             if in_keep_block:
-                # -------- 到了 [mitm] 停 --------
+                # -------- 遇到 [mitm] 就停，不收录 --------
                 if line.lower().startswith("[mitm]"):
-                    out['block'].append("[mitm]")
                     break
 
-                # -------- hostname 收集 --------
+                # -------- hostname 收集，不写入 block --------
                 m_host = self.HOST_RE.match(line)
                 if m_host:
                     hosts = self._parse_hostnames(m_host.group(1))
@@ -141,7 +140,7 @@ class RuleProcessor:
 {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 
 ## 规则说明
-- 每个源文件只保留 **第一个 [section] 开始 到 [mitm]** 部分
+- 每个源文件只保留 **第一个 [section] 开始 到 [mitm] 前** 的部分
 - 所有 hostname 自动归并到最终 [MITM]
 
 ## 统计信息
