@@ -48,6 +48,7 @@ class RuleProcessor:
 
         lines = content.splitlines()
         in_keep_block = False
+        in_mitm_block = False
 
         for raw in lines:
             line = raw.strip()
@@ -61,16 +62,18 @@ class RuleProcessor:
                 continue
 
             if in_keep_block:
-                # -------- 遇到 [mitm] 就停，不收录 --------
+                # -------- 检测 [mitm] --------
                 if line.lower().startswith("[mitm]"):
-                    break
-
-                # -------- hostname 收集，不写入 block --------
-                m_host = self.HOST_RE.match(line)
-                if m_host:
-                    hosts = self._parse_hostnames(m_host.group(1))
-                    out['host'].update(hosts)
+                    in_mitm_block = True
                     continue
+
+                if in_mitm_block:
+                    # -------- hostname 收集 --------
+                    m_host = self.HOST_RE.match(line)
+                    if m_host:
+                        hosts = self._parse_hostnames(m_host.group(1))
+                        out['host'].update(hosts)
+                    continue  # 不把 mitm 的内容写入 block
 
                 # -------- 其它行直接收 --------
                 out['block'].append(raw)
@@ -112,7 +115,6 @@ class RuleProcessor:
     def _format_hostnames(self, hosts: List[str], max_line: int = 80) -> List[str]:
         lines, current = [], "hostname = "
         for h in hosts:
-            # 如果加上这个 host 会超出长度限制，就换行
             if len(current) + len(h) + 2 > max_line:
                 lines.append(current.rstrip(", "))
                 current = "hostname = " + h + ", "
@@ -154,7 +156,7 @@ class RuleProcessor:
 {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 
 ## 规则说明
-- 每个源文件只保留 **第一个 [section] 开始 到 [mitm] 前** 的部分
+- 每个源文件只保留 **第一个 [section] 开始 到 [mitm] 前 + [mitm] 内的 hostname** 
 - 所有 hostname 自动归并到最终 [MITM]
 
 ## 统计信息
