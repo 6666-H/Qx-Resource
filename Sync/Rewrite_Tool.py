@@ -108,6 +108,20 @@ class RuleProcessor:
 
         return merged
 
+    # -------- 格式化 hostname 多行 --------
+    def _format_hostnames(self, hosts: List[str], max_line: int = 80) -> List[str]:
+        lines, current = [], "hostname = "
+        for h in hosts:
+            # 如果加上这个 host 会超出长度限制，就换行
+            if len(current) + len(h) + 2 > max_line:
+                lines.append(current.rstrip(", "))
+                current = "hostname = " + h + ", "
+            else:
+                current += h + ", "
+        if current.strip() != "hostname =":
+            lines.append(current.rstrip(", "))
+        return lines
+
     # -------- 生成输出 --------
     def generate_output(self, merged: Dict[str, Any]) -> str:
         beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
@@ -125,8 +139,8 @@ class RuleProcessor:
         # -------- 汇总 hostname --------
         if merged['host']:
             body.append("[MITM]")
-            host_line = "hostname = " + ", ".join(sorted(merged['host']))
-            body.append(host_line)
+            host_lines = self._format_hostnames(sorted(merged['host']))
+            body.extend(host_lines)
             body.append("")
 
         return "\n".join(header + body)
