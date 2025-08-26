@@ -27,7 +27,7 @@ class RuleProcessor:
     def __init__(self, config: Config):
         self.config = config
 
-    # -------- 下载 --------
+    # -------- 下载规则 --------
     def download_rule(self, name: str, url: str) -> Tuple[str, str | None]:
         try:
             r = requests.get(url, timeout=self.config.TIMEOUT)
@@ -55,32 +55,32 @@ class RuleProcessor:
             if not line:
                 continue
 
-            # -------- 第一个 section 起始 --------
+            # 第一个 section 起始
             if not in_keep_block and line.startswith("[") and line.endswith("]"):
                 in_keep_block = True
                 out['block'].append(line)
                 continue
 
             if in_keep_block:
-                # -------- 检测 [mitm] --------
+                # 检测 [mitm] 开始
                 if line.lower().startswith("[mitm]"):
                     in_mitm_block = True
                     continue
 
                 if in_mitm_block:
-                    # -------- hostname 收集 --------
+                    # 收集 hostname，不写入 block
                     m_host = self.HOST_RE.match(line)
                     if m_host:
                         hosts = self._parse_hostnames(m_host.group(1))
                         out['host'].update(hosts)
-                    continue  # 不把 mitm 的内容写入 block
+                    continue
 
-                # -------- 其它行直接收 --------
+                # 其它行写入 block
                 out['block'].append(raw)
 
         return out
 
-    # -------- hostname 解析 --------
+    # -------- 解析 hostname --------
     def _parse_hostnames(self, raw_value: str) -> List[str]:
         no_comment = re.split(r'\s#|//', raw_value, maxsplit=1)[0].strip()
         no_placeholder = re.sub(r'%[A-Za-z_]+%', '', no_comment).strip()
@@ -111,18 +111,10 @@ class RuleProcessor:
 
         return merged
 
-    # -------- 格式化 hostname 多行 --------
-    def _format_hostnames(self, hosts: List[str], max_line: int = 80) -> List[str]:
-        lines, current = [], "hostname = "
-        for h in hosts:
-            if len(current) + len(h) + 2 > max_line:
-                lines.append(current.rstrip(", "))
-                current = "hostname = " + h + ", "
-            else:
-                current += h + ", "
-        if current.strip() != "hostname =":
-            lines.append(current.rstrip(", "))
-        return lines
+    # -------- 格式化 hostname，生成一行 --------
+    def _format_hostnames(self, hosts: List[str]) -> List[str]:
+        # 所有 hosts 拼成一行
+        return ["hostname = " + ", ".join(hosts)]
 
     # -------- 生成输出 --------
     def generate_output(self, merged: Dict[str, Any]) -> str:
@@ -138,7 +130,7 @@ class RuleProcessor:
 
         body = merged['blocks'][:]
 
-        # -------- 汇总 hostname --------
+        # 汇总所有 hostname 到一个 [MITM]
         if merged['host']:
             body.append("[MITM]")
             host_lines = self._format_hostnames(sorted(merged['host']))
