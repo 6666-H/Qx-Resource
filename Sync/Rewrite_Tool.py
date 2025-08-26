@@ -23,11 +23,6 @@ class Config:
 
 class RuleProcessor:
     HOST_RE = re.compile(r'(?i)^\s*hostname\s*=\s*(.+)$')
-    SECTION_RE = re.compile(r'^\s*\[(.+?)\]\s*$')
-    COMMENT_RE = re.compile(r'^\s*(#|//)')
-
-    # ✅ 只保留这些 section
-    ALLOWED_SECTIONS = {"[rewrite_local]", "[script]", "[rewrite]", "[header_rewrite]"}
 
     def __init__(self, config: Config):
         self.config = config
@@ -42,7 +37,48 @@ class RuleProcessor:
             print(f"Error downloading {name}: {e}")
             return name, None
 
-    # -------- 解析 hostname 列表 --------
+    # -------- 解析单个文件 --------
+    def process_rules(self, content: str) -> Dict[str, Any]:
+        out = {
+            'block': [],
+            'host': set()
+        }
+        if not content:
+            return out
+
+        lines = content.splitlines()
+        in_keep_block = False
+
+        for raw in lines:
+            line = raw.strip()
+            if not line:
+                continue
+
+            # -------- 第一个 section 起始 --------
+            if not in_keep_block and line.startswith("[") and line.endswith("]"):
+                in_keep_block = True
+                out['block'].append(line)
+                continue
+
+            if in_keep_block:
+                # -------- 到了 [mitm] 停 --------
+                if line.lower().startswith("[mitm]"):
+                    out['block'].append("[mitm]")
+                    break
+
+                # -------- hostname 收集 --------
+                m_host = self.HOST_RE.match(line)
+                if m_host:
+                    hosts = self._parse_hostnames(m_host.group(1))
+                    out['host'].update(hosts)
+                    continue
+
+                # -------- 其它行直接收 --------
+                out['block'].append(raw)
+
+        return out
+
+    # -------- hostname 解析 --------
     def _parse_hostnames(self, raw_value: str) -> List[str]:
         no_comment = re.split(r'\s#|//', raw_value, maxsplit=1)[0].strip()
         no_placeholder = re.sub(r'%[A-Za-z_]+%', '', no_comment).strip()
@@ -50,80 +86,12 @@ class RuleProcessor:
         hosts = [p.lower() for p in parts if p]
         return hosts
 
-    # -------- 处理单个源文本 --------
-    def process_rules(self, content: str) -> Dict[str, Any]:
-        out = {
-            'sections': {},
-            'host': set(),
-            'mitm_other': []
-        }
-        if not content:
-            return out
-
-        lines = content.splitlines()
-        current_section = '[rewrite]'
-        out['sections'][current_section] = []
-
-        seen_mitm_other = set()
-        in_js_block = False
-
-        for raw in lines:
-            line = raw.rstrip()
-            if not line.strip() or self.COMMENT_RE.match(line):
-                continue
-
-            # section
-            m_sec = self.SECTION_RE.match(line)
-            if m_sec:
-                sec_name = f"[{m_sec.group(1).strip().lower()}]"
-                current_section = sec_name
-                if current_section not in out['sections']:
-                    out['sections'][current_section] = []
-                continue
-
-            # hostname
-            m_host = self.HOST_RE.match(line)
-            if m_host:
-                hosts = self._parse_hostnames(m_host.group(1))
-                out['host'].update(hosts)
-                continue
-
-            # MITM 其它项
-            if current_section == '[mitm]':
-                key = line.lower()
-                if key not in seen_mitm_other:
-                    out['mitm_other'].append(line)
-                    seen_mitm_other.add(key)
-                continue
-
-            # 🚫 跳过非白名单 section
-            if current_section not in self.ALLOWED_SECTIONS:
-                continue
-
-            # 🚫 跳过 JS 赋值块
-            if re.match(r'^\s*var\s+\w+\s*=\s*JSON\.parse\(\$response\.body\);', line):
-                continue
-            if re.match(r'^\s*\w+\s*=\s*{', line):
-                in_js_block = True
-                continue
-            if in_js_block:
-                if line.strip().endswith("};"):
-                    in_js_block = False
-                continue
-
-            # ✅ 保留规则行
-            out['sections'][current_section].append(line)
-
-        return out
-
-    # -------- 合并多个源 --------
+    # -------- 合并所有文件 --------
     def merge_rules(self) -> Dict[str, Any]:
         merged = {
-            'sections': {},
-            'host': set(),
-            'mitm_other': []
+            'blocks': [],
+            'host': set()
         }
-        seen_mitm_other = set()
 
         for name, url in self.config.REWRITE_SOURCES.items():
             print(f"Downloading {name}...")
@@ -132,21 +100,12 @@ class RuleProcessor:
                 continue
 
             rules = self.process_rules(content)
-
-            for sec, lines in rules['sections'].items():
-                if sec not in merged['sections']:
-                    merged['sections'][sec] = []
-                if lines:
-                    merged['sections'][sec].append(f"# {name}")
-                    merged['sections'][sec].extend(lines)
+            if rules['block']:
+                merged['blocks'].append(f"# {name}")
+                merged['blocks'].extend(rules['block'])
+                merged['blocks'].append("")  # 分隔空行
 
             merged['host'].update(rules['host'])
-
-            for line in rules['mitm_other']:
-                key = line.lower()
-                if key not in seen_mitm_other:
-                    merged['mitm_other'].append(line)
-                    seen_mitm_other.add(key)
 
         return merged
 
@@ -161,27 +120,14 @@ class RuleProcessor:
             *[f"# {name}: {url}" for name, url in self.config.REWRITE_SOURCES.items()],
             ""
         ]
-        body: List[str] = []
 
-        for sec, lines in merged['sections'].items():
-            if sec == '[mitm]':
-                continue
-            if not lines:
-                continue
-            body.append(sec.upper())
-            body.extend(lines)
-            body.append("")
+        body = merged['blocks'][:]
 
-        mitm_block: List[str] = []
-        if merged['mitm_other']:
-            mitm_block.extend(merged['mitm_other'])
+        # -------- 汇总 hostname --------
         if merged['host']:
-            host_line = "hostname = " + ", ".join(sorted(merged['host']))
-            mitm_block.append(host_line)
-
-        if mitm_block:
             body.append("[MITM]")
-            body.extend(mitm_block)
+            host_line = "hostname = " + ", ".join(sorted(merged['host']))
+            body.append(host_line)
             body.append("")
 
         return "\n".join(header + body)
@@ -189,23 +135,17 @@ class RuleProcessor:
     # -------- 更新 README --------
     def update_readme(self, merged: Dict[str, Any]) -> None:
         beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
-        section_counts: Dict[str, int] = {}
-        for sec, lines in merged['sections'].items():
-            cnt = sum(1 for x in lines if not x.strip().startswith('#'))
-            section_counts[sec] = cnt
-
         readme = f"""# 自建重写解锁合集
 
 ## 更新时间
 {beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
 
 ## 规则说明
-本重写规则集合并自各个开源规则，自动归并 hostname 到 [MITM]，并保留 [MITM] 下其它配置项。
+- 每个源文件只保留 **第一个 [section] 开始 到 [mitm]** 部分
+- 所有 hostname 自动归并到最终 [MITM]
 
-## 规则统计
+## 统计信息
 - MITM 主机数量：{len(merged['host'])}
-{"".join([f"- {sec.upper()} 规则数量：{count}\n" for sec, count in section_counts.items()])}
-- MITM 其它配置项数量：{len(merged['mitm_other'])}
 
 ## 规则来源
 {chr(10).join([f"- {name}: {url}" for name, url in self.config.REWRITE_SOURCES.items()])}
