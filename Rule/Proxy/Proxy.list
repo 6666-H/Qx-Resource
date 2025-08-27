@@ -1,5 +1,5 @@
 ﻿# 被墙服务分流规则合集
-# 更新时间：2025-08-27 16:39:20 (北京时间)
+# 更新时间：2025-08-27 16:54:37 (北京时间)
 # 来源：
 # Manual_Proxy: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Proxy.list
 # Google: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
@@ -11,8 +11,9 @@
 # Reddit: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Reddit/Reddit.list
 # Discord: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Discord/Discord.list
 # YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
+# Wikipedia: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Wikipedia/Wikipedia.list
 
-# 规则总数: 1613
+# 规则总数: 1625
 
 DOMAIN,api.imem.app
 DOMAIN,api.swiftgram.app
@@ -1099,6 +1100,7 @@ DOMAIN-SUFFIX,mbrx.app
 DOMAIN-SUFFIX,mcrouter.net
 DOMAIN-SUFFIX,mcrouter.org
 DOMAIN-SUFFIX,mdialog.com
+DOMAIN-SUFFIX,mediawiki.org
 DOMAIN-SUFFIX,meet.new
 DOMAIN-SUFFIX,messenger.com
 DOMAIN-SUFFIX,messengerdevelopers.com
@@ -1353,6 +1355,17 @@ DOMAIN-SUFFIX,whatsappbrand.com
 DOMAIN-SUFFIX,whyfacebook.com
 DOMAIN-SUFFIX,wide-youtube.l.google.com
 DOMAIN-SUFFIX,widevine.com
+DOMAIN-SUFFIX,wikibooks.org
+DOMAIN-SUFFIX,wikidata.org
+DOMAIN-SUFFIX,wikileaks.org
+DOMAIN-SUFFIX,wikimedia.org
+DOMAIN-SUFFIX,wikinews.org
+DOMAIN-SUFFIX,wikipedia.org
+DOMAIN-SUFFIX,wikiquote.org
+DOMAIN-SUFFIX,wikisource.org
+DOMAIN-SUFFIX,wikiversity.org
+DOMAIN-SUFFIX,wikivoyage.org
+DOMAIN-SUFFIX,wiktionary.org
 DOMAIN-SUFFIX,withgoogle.com
 DOMAIN-SUFFIX,withyoutube.com
 DOMAIN-SUFFIX,womenwill.com
