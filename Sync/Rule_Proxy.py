@@ -1,172 +1,112 @@
 import os
 import requests
 import datetime
+import time
+import argparse
+import git
+from pathlib import Path
 from datetime import timedelta
-from typing import Dict
 
-class Config:
-    def __init__(self):
-        self.REPO_PATH = "Rewrite"
-        self.REWRITE_DIR = "Tool"
-        self.OUTPUT_FILE = "Tool.config"
-        self.README_PATH = "README_Rewrite.md"
-        self.TIMEOUT = 30
-        self.REWRITE_SOURCES = {
-            "京东比价": "https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule",
-            "懒人听书": "https://raw.githubusercontent.com/WeiGiegie/666/main/lrts.js",
-            "谷歌重定向":"https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config",
-            "ReLens":"https://raw.githubusercontent.com/chxm1023/Rewrite/main/ReLens.js",
-            "微信110解锁被屏蔽的URL":"https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/Function/UnblockURLinWeChat.conf",
-            "哔哩哔哩广告净化":"https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/BilibiliAds.conf",
-            "Google自动翻页":"https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/Html/EndlessGoogle.conf",
-            "百度搜索去广告":"https://raw.githubusercontent.com/limbopro/Adblock4limbo/main/Adblock4limbo.conf"
-        }
+# 配置项
+REPO_PATH = "Rule"
+FILTER_DIR = "Proxy"
+OUTPUT_FILE = "Proxy.list"
 
-class RuleProcessor:
-    def __init__(self, config: Config):
-        self.config = config
+# 分流规则源列表（仅保留被墙服务）
+FILTER_SOURCES = {
+    "Manual_Proxy": "https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Proxy.list",
+    "Google":     "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list",
+    "Telegram":   "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Telegram/Telegram.list",
+    "GitHub":     "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/GitHub/GitHub.list",
+    "Twitter":    "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Twitter/Twitter.list",
+    "Facebook":   "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Facebook/Facebook.list",
+    "Instagram":  "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Instagram/Instagram.list",
+    "Reddit":     "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Reddit/Reddit.list",
+    "Discord":    "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Discord/Discord.list",
+    "YouTube":    "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list"
+}
 
-    def download_rule(self, name: str, url: str) -> tuple:
+def get_beijing_time():
+    """获取北京时间"""
+    utc_now = datetime.datetime.utcnow()
+    return utc_now + timedelta(hours=8)
+
+def setup_directory():
+    """创建必要的目录"""
+    Path(os.path.join(REPO_PATH, FILTER_DIR)).mkdir(parents=True, exist_ok=True)
+
+def fetch_with_retry(url, retries=3, delay=5):
+    """带重试机制的请求下载"""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (SurgeRuleBot/1.0)"
+    }
+    for i in range(retries):
         try:
-            response = requests.get(url, timeout=self.config.TIMEOUT)
+            response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
-            return name, response.text
+            return response.text
         except Exception as e:
-            print(f"Error downloading {name}: {e}")
-            return name, None
+            print(f"[Retry {i+1}/{retries}] Failed to fetch {url}: {e}")
+            time.sleep(delay)
+    raise Exception(f"❌ Failed to download {url} after {retries} attempts.")
 
-    def process_rules(self, content: str) -> Dict[str, any]:
-        """
-        处理规则文件：
-        - hostname = ... 行收集到 host 集合，最终用于 [MITM]，不再加入原标签
-        - 其它规则行加入当前标签（默认 [rewrite]）
-        """
-        rules = {'sections': {}, 'host': set()}
-        if not content:
-            return rules
+def download_and_merge_rules():
+    """下载并合并所有规则"""
+    beijing_time = get_beijing_time()
+    all_rules = set()
 
-        lines = content.splitlines()
-        current_section = '[rewrite]'  # 默认标签
-        rules['sections'][current_section] = []
+    for name, url in FILTER_SOURCES.items():
+        try:
+            print(f"🔄 Downloading {name}...")
+            content = fetch_with_retry(url)
+            lines = [line.strip() for line in content.splitlines()
+                     if line.strip() and not line.strip().startswith('#')]
+            all_rules.update(lines)
+        except Exception as e:
+            print(f"⚠️ Error downloading {name}: {e}")
 
-        for line in lines:
-            line = line.strip()
-            if not line or line.startswith('#') or line.startswith('//'):
-                continue
+    final_rules = sorted(all_rules)
 
-            # 标签行
-            if line.startswith('[') and line.endswith(']'):
-                current_section = line.lower()
-                if current_section not in rules['sections']:
-                    rules['sections'][current_section] = []
-                continue
+    header = f"""# 被墙服务分流规则合集
+# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
+# 来源：
+# {'\n# '.join([f'{name}: {url}' for name, url in FILTER_SOURCES.items()])}
 
-            # hostname 行单独收集，不加入原标签
-            if 'hostname' in line.lower() and '=' in line:
-                host_str = line.split('=', 1)[1].strip()
-                if host_str:
-                    hosts = [h.strip().lower() for h in host_str.split(',') if h.strip()]
-                    rules['host'].update(hosts)
-                continue  # 跳过添加到当前标签
+# 规则总数: {len(final_rules)}
 
-            # 其他规则行加入当前标签
-            rules['sections'][current_section].append(line)
-
-        return rules
-
-    def merge_rules(self) -> Dict[str, any]:
-        merged_rules = {'sections': {}, 'host': set()}
-
-        for name, url in self.config.REWRITE_SOURCES.items():
-            print(f"Downloading {name}...")
-            _, content = self.download_rule(name, url)
-            if content:
-                rules = self.process_rules(content)
-                for section, contents in rules['sections'].items():
-                    if section not in merged_rules['sections']:
-                        merged_rules['sections'][section] = []
-                    if contents:
-                        merged_rules['sections'][section].append(f"# {name}")
-                        merged_rules['sections'][section].extend(contents)
-                merged_rules['host'].update(rules['host'])
-
-        return merged_rules
-
-    def generate_output(self, rules: Dict[str, any]) -> str:
-        beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
-        content = [
-            f"#!name = 自建重写解锁合集",
-            f"#!desc = 自建重写解锁合集",
-            f"# 更新时间：{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)",
-            "# 合并自以下源：",
-            *[f"# {name}: {url}" for name, url in self.config.REWRITE_SOURCES.items()],
-            ""
-        ]
-
-        # 输出非 MITM 标签内容
-        for section, contents in rules['sections'].items():
-            if '[mitm]' not in section:
-                content.extend([
-                    section.upper(),
-                    *contents,
-                    ""
-                ])
-
-        # 输出 MITM
-        if rules['host']:
-            content.extend([
-                "[MITM]",
-                f"hostname = {','.join(sorted(rules['host']))}",
-                ""
-            ])
-
-        return '\n'.join(content)
-
-    def update_readme(self, rules: Dict[str, any]):
-        beijing_time = datetime.datetime.utcnow() + timedelta(hours=8)
-        section_counts = {}
-        for section, contents in rules['sections'].items():
-            rule_count = len([line for line in contents if not line.startswith('#')])
-            section_counts[section] = rule_count
-
-        content = f"""# 自建重写解锁合集
-
-## 更新时间
-{beijing_time.strftime('%Y-%m-%d %H:%M:%S')} (北京时间)
-
-## 规则说明
-本重写规则集合并自各个开源规则。
-
-## 规则统计
-- MITM主机数量：{len(rules['host'])}
-{"".join([f'- {section.upper()} 规则数量：{count}\n' for section, count in section_counts.items()])}
-
-## 规则来源
-{chr(10).join([f'- {name}: {url}' for name, url in self.config.REWRITE_SOURCES.items()])}
 """
 
-        os.makedirs(self.config.REPO_PATH, exist_ok=True)
-        with open(os.path.join(self.config.REPO_PATH, self.config.README_PATH), 'w', encoding='utf-8') as f:
-            f.write(content)
+    output_path = os.path.join(REPO_PATH, FILTER_DIR, OUTPUT_FILE)
+    with open(output_path, 'w', encoding='utf-8-sig') as f:  # BOM for UTF-8
+        f.write(header + "\n".join(final_rules))
+
+    print(f"✅ Successfully merged {len(final_rules)} rules to {OUTPUT_FILE}")
+    return len(final_rules)
+
+def git_push():
+    """提交更改到 Git 仓库"""
+    try:
+        if not os.path.exists(os.path.join(REPO_PATH, '.git')):
+            print("⚠️ Git repo not found, skipping push.")
+            return
+        repo = git.Repo(REPO_PATH)
+        repo.git.add(all=True)
+        commit_msg = f"Update rules: {get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')} (北京时间)"
+        repo.index.commit(commit_msg)
+        repo.remote(name='origin').push()
+        print("🚀 Successfully pushed to repository")
+    except Exception as e:
+        print(f"❌ Git push failed: {e}")
 
 def main():
-    config = Config()
-    processor = RuleProcessor(config)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--no-push', action='store_true', help='Only download and merge rules, do not push to git')
+    args = parser.parse_args()
 
-    try:
-        os.makedirs(os.path.join(config.REPO_PATH, config.REWRITE_DIR), exist_ok=True)
-        rules = processor.merge_rules()
-        output = processor.generate_output(rules)
-
-        output_path = os.path.join(config.REPO_PATH, config.REWRITE_DIR, config.OUTPUT_FILE)
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(output)
-
-        processor.update_readme(rules)
-        print("Successfully generated rules and README")
-    except Exception as e:
-        print(f"Error in main process: {e}")
-        raise
+    setup_directory()
+    download_and_merge_rules()
+    if not args.no_push:
+        git_push()
 
 if __name__ == "__main__":
     main()
