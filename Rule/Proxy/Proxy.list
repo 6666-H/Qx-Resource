@@ -1,5 +1,5 @@
 ﻿# 被墙服务分流规则合集
-# 更新时间：2025-09-09 11:32:04 (北京时间)
+# 更新时间：2025-09-10 11:25:41 (北京时间)
 # 来源：
 # Manual_Proxy: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Proxy.list
 # Google: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
@@ -13,7 +13,7 @@
 # YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
 # Wikipedia: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Wikipedia/Wikipedia.list
 
-# 规则总数: 1625
+# 规则总数: 1627
 
 DOMAIN,api.imem.app
 DOMAIN,api.swiftgram.app
@@ -1589,6 +1589,7 @@ IP-CIDR,119.235.224.0/24,no-resolve
 IP-CIDR,119.235.232.0/24,no-resolve
 IP-CIDR,119.235.236.0/23,no-resolve
 IP-CIDR,129.134.0.0/17,no-resolve
+IP-CIDR,139.59.210.98/32,no-resolve
 IP-CIDR,149.154.160.0/20,no-resolve
 IP-CIDR,157.240.0.0/17,no-resolve
 IP-CIDR,169.45.248.118/32,no-resolve
@@ -1596,6 +1597,7 @@ IP-CIDR,172.110.32.0/21,no-resolve
 IP-CIDR,173.194.0.0/16,no-resolve
 IP-CIDR,173.252.64.0/18,no-resolve
 IP-CIDR,192.133.76.0/22,no-resolve
+IP-CIDR,196.55.216.167/32,no-resolve
 IP-CIDR,199.59.148.0/22,no-resolve
 IP-CIDR,199.96.56.0/21,no-resolve
 IP-CIDR,202.160.128.0/22,no-resolve
