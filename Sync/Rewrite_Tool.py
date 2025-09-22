@@ -15,6 +15,7 @@ class Config:
         # 规则源
         self.REWRITE_SOURCES = {
             "谷歌重定向":"https://raw.githubusercontent.com/limbopro/Profiles4limbo/refs/heads/main/QuantumultX/Google_rewrite.conf",
+            "谷歌重定向":"https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config",
             "京东比价": "https://raw.githubusercontent.com/githubdulong/Script/master/Surge/jd_price.sgmodule",
             "ReLens":"https://raw.githubusercontent.com/chxm1023/Rewrite/main/ReLens.js",
             "懒人听书": "https://raw.githubusercontent.com/WeiGiegie/666/main/lrts.js"
