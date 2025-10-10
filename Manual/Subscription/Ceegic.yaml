@@ -1,5 +1,5 @@
 proxies:
-  - name: 🇺🇸USA美国-中电
+  - name: USA美国-中电
     type: trojan
     server: gfw.ceegdev.com
     port: 443
