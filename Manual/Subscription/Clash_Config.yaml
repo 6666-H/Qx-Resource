@@ -86,9 +86,6 @@ proxy-providers:
     override:
       additional-prefix: "[机场1] "
 
-# 全局节点筛选
-FilterAll: &FilterAll '^(?=.*(.))(?!.*((?i)群|邀请|返利|循环|官网|客服|网址|获取|订阅|流量|到期|机场|下次|版本|官址|过期|联系|邮箱|公告|倒卖|国内|访问|支持|教程|更新|福利|(\d{4}-\d{2}-\d{2}|\dG))).*$'
-
 # AI 专用节点筛选（美国相关节点）
 FilterAI: &FilterAI '(?i)(美国|US|United|California|New York|Los Angeles)'
 
@@ -97,11 +94,11 @@ UrlTest: &UrlTest {type: url-test, interval: 6, tolerance: 20, lazy: true, url: 
 
 # 策略组
 proxy-groups:
-  - {name: 手动选择, type: select, include-all-providers: true, filter: *FilterAll}
-  - {name: 最优节点, <<: *UrlTest, filter: *FilterAll}
+  - {name: 手动选择, type: select, include-all-providers: true}
+  - {name: 最优节点, <<: *UrlTest, include-all-providers: true}
   - {name: 代理服务, type: select, proxies: [手动选择, 最优节点]}
   - {name: AI, type: select, include-all-providers: true, filter: *FilterAI}
-  - {name: 兜底策略, <<: *UrlTest, proxies: [最优节点, 手动选择, DIRECT]}
+  - {name: 兜底策略, type: select, proxies: [最优节点, 手动选择, DIRECT]}
 
 # 规则订阅
 rule-providers:
