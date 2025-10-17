@@ -1,0 +1,24 @@
+name: Sync Snippets
+
+on:
+  schedule:
+    - cron: "0 0 * * *"   # 每天 0 点执行一次
+  workflow_dispatch:       # 支持手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Run merge script
+        run: bash Sync/Ad_Merge.sh
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add Rewrite/Ad/Ad_merge.snippet
+          git commit -m "Auto update Ad_merge.snippet" || echo "No changes to commit"
+          git push
