@@ -14,9 +14,10 @@ i=1
 for url in "${URLS[@]}"; do
   curl -sSL "$url" -o "tmp${i}.snippet"
 
-  # 只保留规则行，去掉注释和源码
+  # 保留所有 QuantumultX 规则行，去掉注释和源码
   grep -vE '^\s*#' "tmp${i}.snippet" | \
-  grep -E '^(hostname|^https?:\/\/|^url-|.*reject.*|.*script-)' > "tmp${i}.clean"
+  grep -E '^(hostname|host-suffix|host,|^https?:\/\/|.*\surl\s|.*\sreject|.*script-|.*echo-response|.*jsonjq-response-body)' \
+  > "tmp${i}.clean"
 
   i=$((i+1))
 done
