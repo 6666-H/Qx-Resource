@@ -1,21 +1,8 @@
-#!name = 自建重写解锁合集
-#!desc = 自建重写解锁合集
-# 更新时间：2025-10-16 11:07:39 (北京时间)
-# 合并自以下源：
-# 谷歌重定向: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config
-# 微博优化: https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/weibo.snippet
-# sora去水印: https://gist.githubusercontent.com/ddgksf2013/71fca841d34a7b440408276d03da3261/raw/SoraRemoveWatermark.js
-
-# 谷歌重定向
-[rewrite_local]
+# 奶思去广告合集 (QuantumultX 重写规则合并)
+# 自动生成：仅保留规则（去掉注释 & 去掉源码）
+# 更新时间: 2025-10-17 01:41:19
+hostname = videos.openai.com,www.g.cn,www.google.cn
 ^https?://(www\.)?g\.cn url 302 https://www.google.com
 ^https?://(www\.)?google\.cn url 302 https://www.google.com
 ^https?://(www\.)?google\.cn/search url 302 https://www.google.com/search
-
-# sora去水印
-[rewrite_local]
-# > Sora去水印@ddgksf2013
-^https?:\/\/videos\.openai\.com\/vg-assets\/assets.*mp4 url script-request-header https://gist.githubusercontent.com/ddgksf2013/71fca841d34a7b440408276d03da3261/raw/SoraRemoveWatermark.js
-
-[MITM]
-hostname = videos.openai.com, www.g.cn, www.google.cn
+^https?:\/\/videos\.openai\.com\/.*vg-assets\/assets.*mp4 url script-request-header https://gist.githubusercontent.com/ddgksf2013/71fca841d34a7b440408276d03da3261/raw/SoraRemoveWatermark.js
