@@ -43,7 +43,7 @@ done
 # 输出结果并去掉空行
 {
   echo "#!name=小帅的合集重写"
-  echo "#!desc=(支持约730款APP/小程序)针对部分APP和小程序广告进行拦截，某些APP要清除缓存或者重新安装拦截广告才会生效！"
+  echo "#!desc=汇总奶思、墨鱼等大佬部分重写"
   echo "# 更新时间: $(date '+%Y-%m-%d %H:%M:%S')"
   echo ""
   [ -n "$HOSTS" ] && echo "hostname = $HOSTS"
