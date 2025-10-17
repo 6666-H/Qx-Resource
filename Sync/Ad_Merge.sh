@@ -1,20 +1,28 @@
 #!/bin/bash
 set -e
 
-URL1="https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/rewrite.snippet"
-URL2="https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/weibo.snippet"
+# 所有要合并的 URL，只改这里即可
+URLS=(
+  "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/rewrite.snippet"
+  "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/weibo.snippet"
+)
+
 OUTPUT="Rewrite/Ad/Ad_merge.snippet"
 
-# 下载
-curl -sSL $URL1 -o tmp1.snippet
-curl -sSL $URL2 -o tmp2.snippet
+# 下载并清理
+i=1
+for url in "${URLS[@]}"; do
+  curl -sSL "$url" -o "tmp${i}.snippet"
 
-# 去掉注释
-grep -vE '^\s*#' tmp1.snippet > tmp1.clean
-grep -vE '^\s*#' tmp2.snippet > tmp2.clean
+  # 只保留规则行，去掉注释和源码
+  grep -vE '^\s*#' "tmp${i}.snippet" | \
+  grep -E '^(hostname|^https?:\/\/|^url-|.*reject.*|.*script-)' > "tmp${i}.clean"
 
-# 提取并合并 hostname
-HOSTS=$( (grep -i '^hostname' tmp1.clean; grep -i '^hostname' tmp2.clean) \
+  i=$((i+1))
+done
+
+# 合并 hostname
+HOSTS=$(grep -hi '^hostname' tmp*.clean \
     | sed 's/hostname *=//I' \
     | tr ',' '\n' \
     | tr -d ' ' \
@@ -22,18 +30,20 @@ HOSTS=$( (grep -i '^hostname' tmp1.clean; grep -i '^hostname' tmp2.clean) \
     | paste -sd, - )
 
 # 去掉原 hostname 行
-grep -vi '^hostname' tmp1.clean > tmp1.nohost
-grep -vi '^hostname' tmp2.clean > tmp2.nohost
+for f in tmp*.clean; do
+  grep -vi '^hostname' "$f" > "${f%.clean}.nohost"
+done
 
-# 输出结果
-echo "# 合并文件 (自动生成，无注释，合并hostname)" > $OUTPUT
-echo "# 更新时间: $(date '+%Y-%m-%d %H:%M:%S')" >> $OUTPUT
-echo "" >> $OUTPUT
-echo "hostname = $HOSTS" >> $OUTPUT
-echo "" >> $OUTPUT
-cat tmp1.nohost >> $OUTPUT
-echo "" >> $OUTPUT
-cat tmp2.nohost >> $OUTPUT
+# 输出结果并去掉空行
+{
+  echo "# 奶思去广告合集 (QuantumultX 重写规则合并)"
+  echo "# 自动生成：仅保留规则（去掉注释 & 去掉源码）"
+  echo "# 更新时间: $(date '+%Y-%m-%d %H:%M:%S')"
+  echo ""
+  [ -n "$HOSTS" ] && echo "hostname = $HOSTS"
+  echo ""
+  cat tmp*.nohost
+} | awk 'NF' > "$OUTPUT"
 
-# 清理临时文件
-rm tmp1.snippet tmp2.snippet tmp1.clean tmp2.clean tmp1.nohost tmp2.nohost
+# 清理
+rm tmp*.snippet tmp*.clean tmp*.nohost
