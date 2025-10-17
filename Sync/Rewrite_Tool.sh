@@ -3,8 +3,8 @@ set -e
 
 # 所有要合并的 URL，只改这里即可
 URLS=(
-  "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/rewrite.snippet"
-  "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/weibo.snippet"
+  "https:https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config"
+  "https://gist.githubusercontent.com/ddgksf2013/71fca841d34a7b440408276d03da3261/raw/SoraRemoveWatermark.js"
 )
 
 OUTPUT="Rewrite/Ad/Ad_merge.snippet"
