@@ -7,7 +7,7 @@ URLS=(
   "https://gist.githubusercontent.com/ddgksf2013/71fca841d34a7b440408276d03da3261/raw/SoraRemoveWatermark.js"
 )
 
-OUTPUT="Rewrite/Ad/Ad_merge.snippet"
+OUTPUT="Rewrite/Tool/Tool.snippet"
 
 # 下载并清理
 i=1
