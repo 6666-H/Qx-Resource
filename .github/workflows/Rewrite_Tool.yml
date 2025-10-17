@@ -1,4 +1,4 @@
-name: Sync Snippets
+name: Sync Rewrite_Tool Snippets
 
 on:
   schedule:
