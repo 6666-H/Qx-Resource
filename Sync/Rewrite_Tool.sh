@@ -7,7 +7,7 @@ URLS=(
   "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/weibo.snippet"
 )
 
-OUTPUT="Rewrite/Tool/Ad_merge.snippet"
+OUTPUT="Rewrite/Tool/Tool.snippet"
 
 # 下载并处理
 i=1
