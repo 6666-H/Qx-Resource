@@ -19,6 +19,6 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add Rewrite/Ad/Ad_merge.snippet
-          git commit -m "Auto update Ad_merge.snippet" || echo "No changes to commit"
+          git add Rewrite/Tool/Tool.snippet
+          git commit -m "Auto update Tool.snippet" || echo "No changes to commit"
           git push
