@@ -37,7 +37,7 @@ done
 
 # 输出结果并去掉空行
 {
-  echo "# 奶思去广告合集 (QuantumultX 重写规则合并)"
+  echo "# 自建重写合集 (QuantumultX 重写规则合并)"
   echo "# 自动生成：仅保留规则（去掉注释 & 去掉源码）"
   echo "# 更新时间: $(date '+%Y-%m-%d %H:%M:%S')"
   echo ""
