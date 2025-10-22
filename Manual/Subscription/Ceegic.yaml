@@ -10,5 +10,4 @@ proxies:
     ws-opts:
       path: /this_is_a_websocket_path  
 [Proxy]
-USA美国-中电 = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, udp-relay=true, network=ws, ws-path=/this_is_a_websocket_path, ws-headers=Host:gfw.ceegdev.com, sni=gfw.ceegdev.com
-
+USA美国-中电 = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, udp-relay=true, ws=true, ws-path=/this_is_a_websocket_path, sni=gfw.ceegdev.com, ws-headers=Host:gfw.ceegdev.com
