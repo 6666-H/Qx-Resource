@@ -1,2 +1,9 @@
 [Proxy]
-Proxy-Trojan = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path
+Proxy-Trojan = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, sni=gfw.ceegdev.com, ws=true, ws-path=/this_is_a_websocket_path
+
+[Proxy Group]
+ProxyGroup = select, Proxy-Trojan
+
+[Rule]
+DOMAIN-SUFFIX,google.com,ProxyGroup
+DOMAIN-SUFFIX,youtube.com,ProxyGroup
