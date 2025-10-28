@@ -1,0 +1,18 @@
+
+  {
+    "name": "🇺🇸USA 美国-中电",
+    "type": "trojan",
+    "server": "gfw.ceegdev.com",
+    "port": 443,
+    "udp": true,
+    "password": "abcdefg123123",
+    "skip-cert-verify": true,
+    "network": "ws",
+    "ws-opts": {
+      "path": "/this_is_a_websocket_path"
+    },
+    "tls": true,
+    "sni": "gfw.ceegdev.com",
+    "_subName": "中电自建",
+    "_subDisplayName": ""
+  }
