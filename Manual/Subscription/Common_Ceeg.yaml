@@ -1,5 +1,15 @@
-#Quantumult
-trojan=gfw.ceegdev.com:443,password=abcdefg123123,obfs=wss,obfs-uri=/this_is_a_websocket_path,tls-verification=false,tls-host=gfw.ceegdev.com,udp-relay=true,tag=🇺🇸USA 美国-中电
+#Quantumult X
+proxies:
+  - name: USA美国-中电
+    type: trojan
+    server: gfw.ceegdev.com
+    port: 443
+    udp: true
+    password: abcdefg123123
+    skip-cert-verify: true
+    network: ws
+    ws-opts:
+      path: /this_is_a_websocket_path  
 
 #Surge
 🇺🇸USA 美国-中电=trojan,gfw.ceegdev.com,443,password="abcdefg123123",ws=true,ws-path=/this_is_a_websocket_path,tls=true,sni=gfw.ceegdev.com,skip-cert-verify=true,udp-relay=true
