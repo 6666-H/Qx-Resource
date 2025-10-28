@@ -1,14 +1,4 @@
-proxies:
-  - name: USA美国-中电
-    type: trojan
-    server: gfw.ceegdev.com
-    port: 443
-    udp: true
-    password: abcdefg123123
-    skip-cert-verify: true
-    network: ws
-    ws-opts:
-      path: /this_is_a_websocket_path  
+
 
 [Proxy]
 USA美国-中电 = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, sni=gfw.ceegdev.com, ws=true, ws-path=/this_is_a_websocket_path
