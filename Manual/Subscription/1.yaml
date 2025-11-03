@@ -1,0 +1,138 @@
+# Clash Verge 高级分流配置（含策略组逻辑）
+# 已根据你的 QX 分组逻辑重构为 Clash Verge 格式
+# ⚠️ 请在 proxy-providers 中填入你的机场订阅链接
+
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+
+dns:
+  enable: true
+  listen: :53
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+  fallback:
+    - https://dns.cloudflare.com/dns-query
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+
+proxy-providers:
+  my_airport:
+    type: http
+    url: "此处填写你的机场订阅链接"
+    interval: 86400
+    path: ./proxies/my_airport.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+proxy-groups:
+  # 节点测速与自动选择
+  - name: 最优节点
+    type: url-test
+    use:
+      - my_airport
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 0
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png
+
+  # 人工智能专用分流（优先选择 GPT/Claude/Gemini 等节点）
+  - name: 人工智能
+    type: select
+    proxies:
+      - 最优节点
+      - 代理服务
+      - 兜底策略
+      - DIRECT
+    use:
+      - my_airport
+    filter: "(?i)(GPT|Chat|Claude|Gemini|美国|🇺🇸)"
+    icon: https://raw.githubusercontent.com/lige47/QuanX-icon-rule/main/icon/chatgpt(white).png
+
+  # 通用代理服务（排除专线/游戏节点）
+  - name: 代理服务
+    type: select
+    proxies:
+      - 最优节点
+      - 兜底策略
+      - DIRECT
+    use:
+      - my_airport
+    filter: "^((?!(专线|手游|游戏|IPLC|IEPL|game)).)*$"
+    icon: https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/Proxy.png
+
+  # 最终兜底策略
+  - name: 兜底策略
+    type: select
+    proxies:
+      - DIRECT
+      - 代理服务
+      - 最优节点
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Final.png
+
+  # 系统默认直连组
+  - name: DIRECT
+    type: select
+    proxies:
+      - DIRECT
+
+rule-providers:
+  奶思合集:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/fmz200/wool_scripts/main/Loon/rule/rejectAd.list
+    path: ./rules/rejectAd.list
+    interval: 172800
+
+  硅谷云☁️:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/ccyin/Clash/refs/heads/main/Clash/emby-01.list
+    path: ./rules/emby-01.list
+    interval: 172800
+
+  人工智能:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/fmz200/wool_scripts/main/Loon/rule/AI.list
+    path: ./rules/AI.list
+    interval: 172800
+
+  代理列表:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Rule/Proxy/Proxy.list
+    path: ./rules/Proxy.list
+    interval: 172800
+
+  本地直连:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Lan/Lan.list
+    path: ./rules/Lan.list
+    interval: 172800
+
+  国内地区:
+    type: http
+    behavior: domain
+    url: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Region.list
+    path: ./rules/Region.list
+    interval: 172800
+
+rules:
+  - RULE-SET,奶思合集,REJECT
+  - RULE-SET,硅谷云☁️,最优节点
+  - RULE-SET,人工智能,人工智能
+  - RULE-SET,代理列表,代理服务
+  - RULE-SET,本地直连,DIRECT
+  - RULE-SET,国内地区,DIRECT
+  - MATCH,兜底策略
