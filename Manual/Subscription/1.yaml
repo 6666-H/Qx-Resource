@@ -25,8 +25,7 @@ dns:
 
 proxy-providers:
   my_airport:
-    type: http
-    url: "此处填写你的机场订阅链接"
+    url: "https://api.starbb.sbs/api/v1/client/subscribe?token=cedde718af5b679b27d248bdc637ad99"
     interval: 86400
     path: ./proxies/my_airport.yaml
     health-check:
