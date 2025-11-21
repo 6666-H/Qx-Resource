@@ -4,6 +4,7 @@ set -e
 # 所有要合并的 URL，只改这里即可
 URLS=(
   "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/rewrite.snippet"
+  "https://github.com/fmz200/wool_scripts/raw/main/Surge/module/blockAds.module"
   "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/weibo.snippet"
   "https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config"
   "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/BilibiliAds.conf"
