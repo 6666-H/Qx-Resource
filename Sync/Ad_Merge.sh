@@ -8,9 +8,6 @@ URLS=(
   "https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config"
   "https://raw.githubusercontent.com/ddgksf2013/Rewrite/master/AdBlock/BilibiliAds.conf"
   "https://raw.githubusercontent.com/Neurogram-R/Quantumult-X/main/snippet/Dualsub.snippet"
-  "https://raw.githubusercontent.com/fmz200/wool_scripts/refs/heads/main/Surge/module/blockAds.module"
-  "https://raw.githubusercontent.com/fmz200/wool_scripts/refs/heads/main/Surge/module/weibo.module"
-  "https://raw.githubusercontent.com/fmz200/wool_scripts/refs/heads/main/Loon/plugin/blockAds.plugin"
 )
 
 OUTPUT="Rewrite/Ad/Ad_merge.snippet"
