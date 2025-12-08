@@ -1,5 +1,5 @@
 ﻿# 被墙服务分流规则合集
-# 更新时间：2025-12-07 11:55:49 (北京时间)
+# 更新时间：2025-12-08 11:54:17 (北京时间)
 # 来源：
 # Manual_Proxy: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Proxy.list
 # Google: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
@@ -13,7 +13,7 @@
 # YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
 # Wikipedia: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Wikipedia/Wikipedia.list
 
-# 规则总数: 1633
+# 规则总数: 1634
 
 DOMAIN,api.imem.app
 DOMAIN,api.swiftgram.app
@@ -198,6 +198,7 @@ DOMAIN-SUFFIX,bumptop.org
 DOMAIN-SUFFIX,bumptunes.com
 DOMAIN-SUFFIX,buyingfacebooklikes.com
 DOMAIN-SUFFIX,buyoculus.com
+DOMAIN-SUFFIX,c.gle
 DOMAIN-SUFFIX,campuslondon.com
 DOMAIN-SUFFIX,capitalg.com
 DOMAIN-SUFFIX,careersatfb.com
