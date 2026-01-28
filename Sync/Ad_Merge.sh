@@ -5,7 +5,6 @@ set -e
 URLS=(
   "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/rewrite.snippet"
   "https://raw.githubusercontent.com/fmz200/wool_scripts/main/QuantumultX/rewrite/weibo.snippet"
-  "https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rewrite/GoogleToSearch.config"
 )
 
 OUTPUT="Rewrite/Ad/Ad_merge.snippet"
