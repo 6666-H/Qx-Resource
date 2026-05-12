@@ -1,5 +1,5 @@
 ﻿# 被墙服务分流规则合集
-# 更新时间：2026-05-11 14:38:19 (北京时间)
+# 更新时间：2026-05-12 14:13:33 (北京时间)
 # 来源：
 # Manual_Proxy: https://raw.githubusercontent.com/6666-H/Qx-Resource/refs/heads/main/Manual/Rule/Proxy.list
 # Google: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Google/Google.list
@@ -13,7 +13,7 @@
 # YouTube: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/YouTube/YouTube.list
 # Wikipedia: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Surge/Wikipedia/Wikipedia.list
 
-# 规则总数: 1634
+# 规则总数: 1627
 
 DOMAIN,api.imem.app
 DOMAIN,api.swiftgram.app
@@ -301,7 +301,6 @@ DOMAIN-SUFFIX,dotfacebook.net
 DOMAIN-SUFFIX,doubleclick-cn.net
 DOMAIN-SUFFIX,doubleclick.com
 DOMAIN-SUFFIX,doubleclick.net
-DOMAIN-SUFFIX,download.qatp1.net
 DOMAIN-SUFFIX,draftjs.org
 DOMAIN-SUFFIX,episodic.com
 DOMAIN-SUFFIX,expresswifi.com
@@ -1115,7 +1114,6 @@ DOMAIN-SUFFIX,miss1.net
 DOMAIN-SUFFIX,mobilefacebook.com
 DOMAIN-SUFFIX,mobileview.page
 DOMAIN-SUFFIX,moneywithfacebook.com
-DOMAIN-SUFFIX,monitoring.qpdp1.net
 DOMAIN-SUFFIX,moodstocks.com
 DOMAIN-SUFFIX,myfbfans.com
 DOMAIN-SUFFIX,myoctocat.com
@@ -1195,12 +1193,8 @@ DOMAIN-SUFFIX,projectbaseline.com
 DOMAIN-SUFFIX,pscp.tv
 DOMAIN-SUFFIX,publishproxy.com
 DOMAIN-SUFFIX,pyrobot.org
-DOMAIN-SUFFIX,qagpublic.qatp1.net
-DOMAIN-SUFFIX,qgadmin.qcpp1.net
 DOMAIN-SUFFIX,qiao-cn.com
 DOMAIN-SUFFIX,qpx.googleflights.net
-DOMAIN-SUFFIX,qualysapi.qatp1.net
-DOMAIN-SUFFIX,qualysguard.qpdp1.net
 DOMAIN-SUFFIX,questvisual.com
 DOMAIN-SUFFIX,quickoffice.com
 DOMAIN-SUFFIX,quiksee.com
@@ -1238,7 +1232,6 @@ DOMAIN-SUFFIX,rocksdb.org
 DOMAIN-SUFFIX,run.app
 DOMAIN-SUFFIX,savethedate.foo
 DOMAIN-SUFFIX,saynow.com
-DOMAIN-SUFFIX,scanservice1.qcpp1.net
 DOMAIN-SUFFIX,schema.org
 DOMAIN-SUFFIX,schemer.com
 DOMAIN-SUFFIX,screenwisetrends.com
