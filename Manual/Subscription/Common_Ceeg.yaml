@@ -1,3 +1,48 @@
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: false
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  nameserver:
+    - 119.29.29.29
+    - 223.5.5.5
+    - 114.114.114.114
+
+proxies:
+  - name: "🇺🇸USA 美国-中电"
+    type: trojan
+    server: gfw.ceegdev.com
+    port: 443
+    password: "abcdefg123123"
+    udp: true
+    sni: gfw.ceegdev.com
+    skip-cert-verify: true
+    network: ws
+    ws-opts:
+      path: /this_is_a_websocket_path
+
+proxy-groups:
+  - name: 手动选择
+    type: select
+    proxies:
+      - "🇺🇸USA 美国-中电"
+      - DIRECT
+
+  - name: 兜底策略
+    type: select
+    proxies:
+      - 手动选择
+      - "🇺🇸USA 美国-中电"
+      - DIRECT
+
+rules:
+  - GEOIP,CN,DIRECT
+  - MATCH,兜底策略
+
 #Quantumult X
 proxies:
   - name: USA美国-中电
