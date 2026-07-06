@@ -1,6 +1,6 @@
 [Proxy]
-us-dev = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path
+CEEG_USA = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path
 
-hk-dev = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path_hk
+CEEG_HK = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path_hk
 
 us-aws-intl = trojan, gfw-us-aws.ceegintl.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path
