@@ -1,44 +1,6 @@
-mixed-port: 7890
-allow-lan: true
-mode: rule
-log-level: info
-ipv6: false
+[Proxy]
+us-dev = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path
 
-dns:
-  enable: true
-  listen: 0.0.0.0:1053
-  nameserver:
-    - 119.29.29.29
-    - 223.5.5.5
-    - 114.114.114.114
+hk-dev = trojan, gfw.ceegdev.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path_hk
 
-proxies:
-  - name: "🇺🇸USA 美国-中电"
-    type: trojan
-    server: gfw.ceegdev.com
-    port: 443
-    password: "abcdefg123123"
-    udp: true
-    sni: gfw.ceegdev.com
-    skip-cert-verify: true
-    network: ws
-    ws-opts:
-      path: /this_is_a_websocket_path
-
-proxy-groups:
-  - name: 手动选择
-    type: select
-    proxies:
-      - "🇺🇸USA 美国-中电"
-      - DIRECT
-
-  - name: 兜底策略
-    type: select
-    proxies:
-      - 手动选择
-      - "🇺🇸USA 美国-中电"
-      - DIRECT
-
-rules:
-  - GEOIP,CN,DIRECT
-  - MATCH,兜底策略
+us-aws-intl = trojan, gfw-us-aws.ceegintl.com, 443, password=abcdefg123123, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path
