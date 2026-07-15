@@ -86,9 +86,8 @@ dns:
       - 0.0.0.0/32
 
 proxies:
-  - {"name":"us-dev","type":"trojan","server":"gfw.ceegdev.com","port":443,"udp":true,"password":"yR$4v*N9#mX2tQ!a","skip-cert-verify":true,"network":"ws","ws-opts":{"path":"/this_is_a_websocket_path"}}
-  - {"name":"hk-dev","type":"trojan","server":"gfw.ceegdev.com","port":443,"udp":true,"password":"yR$4v*N9#mX2tQ!a","skip-cert-verify":true,"network":"ws","ws-opts":{"path":"/this_is_a_websocket_path_hk"}}
-  - {"name":"us-aws-intl","type":"trojan","server":"gfw-us-aws.ceegintl.com","port":443,"udp":true,"password":"yR$4v*N9#mX2tQ!a","skip-cert-verify":true,"network":"ws","ws-opts":{"path":"/this_is_a_websocket_path"}}
+  - {"name":"USA-DEV","type":"trojan","server":"gfw.ceegdev.com","port":443,"udp":true,"password":"yR$4v*N9#mX2tQ!a","skip-cert-verify":true,"network":"ws","ws-opts":{"path":"/this_is_a_websocket_path"}}
+  - {"name":"hk-dev","type":"trojan","server":"gfw.ceegdev.com1","port":443,"udp":true,"password":"yR$4v*N9#mX2tQ!a","skip-cert-verify":true,"network":"ws","ws-opts":{"path":"/this_is_a_websocket_path_hk"}}
 proxy-groups:
   - name: 🚀 节点选择
     type: select
