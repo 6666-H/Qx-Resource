@@ -1,2 +1,8 @@
 CEEG_USA🇺🇸 = trojan, gfw.ceegdev.com, 443, password=yR$4v*N9#mX2tQ!a, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path
 CEEG_HK🇭🇰 = trojan, gfw.ceegdev.com, 443, password=yR$4v*N9#mX2tQ!a, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path_hk
+
+[server_local]
+
+trojan=gfw.ceegdev.com:443, password=yR$4v*N9#mX2tQ!a, obfs=wss, obfs-host=gfw.ceegdev.com, obfs-uri=/this_is_a_websocket_path, tls-verification=false, fast-open=false, udp-relay=true, tag=CEEG_USA🇺🇸
+
+trojan=gfw.ceegdev.com:443, password=yR$4v*N9#mX2tQ!a, obfs=wss, obfs-host=gfw.ceegdev.com, obfs-uri=/this_is_a_websocket_path_hk, tls-verification=false, fast-open=false, udp-relay=true, tag=CEEG_HK🇭🇰
