@@ -1,0 +1,2 @@
+中电-美国 = trojan, gfw.ceegdev.com, 443, password=yR$4v*N9#mX2tQ!a, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path
+中电-香港 = trojan, gfw.ceegdev.com, 443, password=yR$4v*N9#mX2tQ!a, tls=true, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path_hk
