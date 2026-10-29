@@ -1,7 +1,16 @@
 
 proxies:
+
+  - ss:
+      name: "qqg-us"
+      server: 107.149.159.151
+      port: 8388
+      cipher: aes-256-gcm
+      password: "ce77e9aca563a9aa99d5c3950bf818da"
+      udp: true
+
   - trojan:
-      name: "中电-美国"
+      name: "ceegdev-us"
       server: gfw.ceegdev.com
       port: 443
       password: "yR$4v*N9#mX2tQ!a"
@@ -12,7 +21,7 @@ proxies:
         host: gfw.ceegdev.com
 
   - trojan:
-      name: "中电-香港"
+      name: "ceegdev-hk"
       server: gfw.ceegdev.com
       port: 443
       password: "yR$4v*N9#mX2tQ!a"
