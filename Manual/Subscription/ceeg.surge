@@ -1,6 +1,6 @@
 
-shadowsocks=107.149.159.151:8388, method=aes-256-gcm, password=ce77e9aca563a9aa99d5c3950bf818da, fast-open=false, udp-relay=true, tag=QQG-US
+QQG-US = ss, 107.149.159.151, 8388, encrypt-method=aes-256-gcm, password=ce77e9aca563a9aa99d5c3950bf818da, tfo=false, udp-relay=true
 
-trojan=gfw.ceegdev.com:443, password=yR$4v*N9#mX2tQ!a, obfs=wss, obfs-host=gfw.ceegdev.com, obfs-uri=/this_is_a_websocket_path, tls-verification=false, fast-open=false, udp-relay=true, tag=CEEGDEV-US
+CEEGDEV-US = trojan, gfw.ceegdev.com, 443, password=yR$4v*N9#mX2tQ!a, sni=gfw.ceegdev.com, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path, ws-headers=Host:gfw.ceegdev.com, tfo=false
 
-trojan=gfw.ceegdev.com:443, password=yR$4v*N9#mX2tQ!a, obfs=wss, obfs-host=gfw.ceegdev.com, obfs-uri=/this_is_a_websocket_path_hk, tls-verification=false, fast-open=false, udp-relay=true, tag=CEEGDEV-HK
+CEEGDEV-HK = trojan, gfw.ceegdev.com, 443, password=yR$4v*N9#mX2tQ!a, sni=gfw.ceegdev.com, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path_hk, ws-headers=Host:gfw.ceegdev.com, tfo=false
