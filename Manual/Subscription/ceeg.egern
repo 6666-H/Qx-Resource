@@ -1,7 +1,7 @@
 
 proxies:
   - shadowsocks:
-      name: "🇺🇸QQG-SS"
+      name: "QQG-US"
       server: 107.149.159.151
       port: 8388
       method: aes-256-gcm
@@ -10,7 +10,7 @@ proxies:
       udp_relay: true
 
   - trojan:
-      name: "ceegdev-us"
+      name: "CEEGDEV-US"
       server: gfw.ceegdev.com
       port: 443
       password: "yR$4v*N9#mX2tQ!a"
@@ -22,7 +22,7 @@ proxies:
         host: gfw.ceegdev.com
 
   - trojan:
-      name: "ceegdev-hk"
+      name: "CEEGDEV-HK"
       server: gfw.ceegdev.com
       port: 443
       password: "yR$4v*N9#mX2tQ!a"
