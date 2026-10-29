@@ -1,13 +1,13 @@
 
 proxies:
   - shadowsocks:
-      name: "qqg-us"
+      name: "🇺🇸QQG-SS"
       server: 107.149.159.151
       port: 8388
       method: aes-256-gcm
       password: "ce77e9aca563a9aa99d5c3950bf818da"
-      udp_relay: true
       tfo: false
+      udp_relay: true
 
   - trojan:
       name: "ceegdev-us"
