@@ -1,0 +1,23 @@
+
+proxies:
+  - trojan:
+      name: "中电-美国"
+      server: gfw.ceegdev.com
+      port: 443
+      password: "填写正确密码"
+      sni: gfw.ceegdev.com
+      skip_tls_verify: true
+      websocket:
+        path: "/this_is_a_websocket_path"
+        host: gfw.ceegdev.com
+
+  - trojan:
+      name: "中电-香港"
+      server: gfw.ceegdev.com
+      port: 443
+      password: "填写正确密码"
+      sni: gfw.ceegdev.com
+      skip_tls_verify: true
+      websocket:
+        path: "/this_is_a_websocket_path_hk"
+        host: gfw.ceegdev.com
