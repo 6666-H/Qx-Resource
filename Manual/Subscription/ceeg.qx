@@ -1,2 +1,6 @@
-trojan=gfw.ceegdev.com:443, password=yR$4v*N9#mX2tQ!a, obfs=wss, obfs-host=gfw.ceegdev.com, obfs-uri=/this_is_a_websocket_path, tls-verification=false, fast-open=false, udp-relay=true, tag=中电-美国
-trojan=gfw.ceegdev.com:443, password=yR$4v*N9#mX2tQ!a, obfs=wss, obfs-host=gfw.ceegdev.com, obfs-uri=/this_is_a_websocket_path_hk, tls-verification=false, fast-open=false, udp-relay=true, tag=中电-香港
+
+shadowsocks=107.149.159.151:8388, method=aes-256-gcm, password=ce77e9aca563a9aa99d5c3950bf818da, fast-open=false, udp-relay=true, tag=QQG-US
+
+trojan=gfw.ceegdev.com:443, password=yR$4v*N9#mX2tQ!a, obfs=wss, obfs-host=gfw.ceegdev.com, obfs-uri=/this_is_a_websocket_path, tls-verification=false, fast-open=false, udp-relay=true, tag=CEEGDEV-US
+
+trojan=gfw.ceegdev.com:443, password=yR$4v*N9#mX2tQ!a, obfs=wss, obfs-host=gfw.ceegdev.com, obfs-uri=/this_is_a_websocket_path_hk, tls-verification=false, fast-open=false, udp-relay=true, tag=CEEGDEV-HK
