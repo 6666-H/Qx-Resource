@@ -1,3 +1,1 @@
 CEEGDEV-US = trojan, gfw.ceegdev.com, 443, password=yR$4v*N9#mX2tQ!a, sni=gfw.ceegdev.com, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path, ws-headers=Host:gfw.ceegdev.com, tfo=false
-
-CEEGDEV-HK = trojan, gfw.ceegdev.com, 443, password=yR$4v*N9#mX2tQ!a, sni=gfw.ceegdev.com, skip-cert-verify=true, ws=true, ws-path=/this_is_a_websocket_path_hk, ws-headers=Host:gfw.ceegdev.com, tfo=false
