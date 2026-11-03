@@ -13,15 +13,3 @@ proxies:
         path: "/this_is_a_websocket_path"
         host: gfw.ceegdev.com
 
-  - trojan:
-      name: "CEEGDEV-HK"
-      server: gfw.ceegdev.com
-      port: 443
-      password: "yR$4v*N9#mX2tQ!a"
-      sni: gfw.ceegdev.com
-      skip_tls_verify: true
-      tfo: false
-      websocket:
-        path: "/this_is_a_websocket_path_hk"
-        host: gfw.ceegdev.com
-
